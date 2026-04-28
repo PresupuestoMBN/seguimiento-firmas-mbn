@@ -98,7 +98,7 @@ const IS_GITHUB_PAGES=location.hostname.endsWith('github.io');
 const LS_IDS='panel_firma_ids_v5';
 // IDs preconfigurados para que cualquier persona que abra el enlace vea el panel listo.
 // Si se guardan IDs desde "Parametrizar", esos reemplazan estos valores solo en ese navegador.
-const DEFAULT_IDS=['59720','59703','59688','59514','59499','59422','57551','57542','59983','59893'];
+const DEFAULT_IDS=['59720','59703','59688','59514','59499','59422','57551','57542','59983','59893','60145'];
 const REFRESH_SECONDS=300;
 const SPECIAL_SIGNERS=['JAVIER PERÓ OVALLE','JAVIER PERO OVALLE','MARIA CATALINA PAROT DONOSO','MARÍA CATALINA PAROT DONOSO'];
 const SEQUENTIAL_VISADORES=['CRISTIAN PARRAGUEZ LEIVA','STEFAN ANDRÉS GOECKE RUZ','STEFAN ANDRES GOECKE RUZ'];
@@ -138,7 +138,7 @@ function isFinalizado(r){
   return firmasOk && enumOk && visOk;
 }
 function initials(n){return String(n||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?'}
-async function fetchTextWithTimeout(url, timeoutMs=12000){
+async function fetchTextWithTimeout(url, timeoutMs=8000){
   const ctrl=new AbortController();
   const t=setTimeout(()=>ctrl.abort(),timeoutMs);
   try{
@@ -157,31 +157,53 @@ function parseApiPayload(text){
   }
   return data;
 }
+function directUrl(id){return API_BASE+encodeURIComponent(id)}
+function proxyUrl(id){return CORS_PROXIES[0]+encodeURIComponent(directUrl(id))}
+async function fetchDocDirect(clean){
+  const text=await fetchTextWithTimeout(directUrl(clean),6500);
+  const data=parseApiPayload(text);
+  if(!data)throw new Error('Respuesta sin datos');
+  return{id:clean,ok:true,reason:'',data};
+}
+async function fetchDocProxy(clean){
+  const text=await fetchTextWithTimeout(proxyUrl(clean),9000);
+  const data=parseApiPayload(text);
+  if(!data)throw new Error('Respuesta sin datos');
+  return{id:clean,ok:true,reason:'Conectado mediante proxy CORS para GitHub Pages.',data};
+}
 async function fetchDoc(id){
   const clean=cleanId(id);
   if(!/^\d{5}$/.test(clean))return{id:clean,ok:false,reason:'ID inválido: debe tener 5 dígitos.',data:null};
 
-  const targetUrl=API_BASE+encodeURIComponent(clean);
-  const attempts=[];
-
-  // En GitHub Pages probamos proxy primero para evitar bloqueo CORS inmediato.
-  // Fuera de GitHub, probamos directo primero.
-  if(!IS_GITHUB_PAGES)attempts.push({label:'directo',url:targetUrl,timeout:12000});
-  for(const proxy of CORS_PROXIES)attempts.push({label:'proxy',url:proxy+encodeURIComponent(targetUrl),timeout:15000});
-  if(IS_GITHUB_PAGES)attempts.push({label:'directo',url:targetUrl,timeout:12000});
-
   const errors=[];
-  for(const a of attempts){
-    try{
-      const text=await fetchTextWithTimeout(a.url,a.timeout);
-      const data=parseApiPayload(text);
-      if(!data)return{id:clean,ok:false,reason:'La API respondió, pero no entregó datos para este ID.',data:null};
-      return{id:clean,ok:true,reason:a.label==='proxy'?'Conectado mediante proxy CORS para GitHub Pages.':'',data};
-    }catch(e){
-      errors.push(a.label+': '+(e.message||e.name||'error'));
+
+  // Primero se intenta directo. Si la API permite CORS, esta es la vía más rápida.
+  // Si GitHub Pages es bloqueado por CORS, el error suele ser inmediato y pasa al proxy.
+  try{ return await fetchDocDirect(clean); }
+  catch(e){ errors.push('directo: '+(e.message||e.name||'error')); }
+
+  // Fallback para GitHub Pages cuando la API no permite llamadas desde github.io.
+  // No se usa cache local: cada actualización consulta la API nuevamente.
+  try{ return await fetchDocProxy(clean); }
+  catch(e){ errors.push('proxy: '+(e.message||e.name||'error')); }
+
+  return{id:clean,ok:false,reason:'No se pudo conectar con la API. '+errors.join(' | '),data:null};
+}
+async function fetchAllDocs(ids,onItem){
+  const concurrency=4;
+  const out=new Array(ids.length);
+  let next=0, done=0;
+  async function worker(){
+    while(next<ids.length){
+      const idx=next++;
+      const item=await fetchDoc(ids[idx]);
+      out[idx]=item;
+      done++;
+      if(onItem)onItem(item,done,ids.length,out.filter(Boolean));
     }
   }
-  return{id:clean,ok:false,reason:'No se pudo conectar con la API. '+errors.join(' | '),data:null};
+  await Promise.all(Array.from({length:Math.min(concurrency,ids.length)},worker));
+  return out;
 }
 
 function buildAssignments(kind){
@@ -224,18 +246,23 @@ async function update(){
   running=true;
   $('refreshBtn').disabled=true;
   $('refreshBtn').textContent='Consultando...';
-  const raw=[];
   docs=[];
-  notice('Consultando API...');
-  for(const id of ids){
-    const item=await fetchDoc(id);
-    raw.push(item);
-    docs=raw.filter(r=>!isFinalizado(r));
-    render();
+  notice('Consultando API... 0/'+ids.length);
+
+  let raw=[];
+  try{
+    raw=await fetchAllDocs(ids,(item,done,total,partial)=>{
+      docs=partial.filter(r=>!isFinalizado(r));
+      notice('Consultando API... '+done+'/'+total);
+      render();
+    });
+  } finally {
+    $('refreshBtn').disabled=false;
+    $('refreshBtn').textContent='Actualizar';
+    running=false;
   }
-  $('refreshBtn').disabled=false;
-  $('refreshBtn').textContent='Actualizar';
-  running=false;
+
+  docs=raw.filter(r=>!isFinalizado(r));
   countdown=REFRESH_SECONDS;
   const errors=docs.filter(r=>!r.ok).length;
   const finalizados=raw.filter(isFinalizado).length;
