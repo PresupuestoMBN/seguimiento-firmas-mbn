@@ -88,14 +88,11 @@ const REFRESH_SECONDS=300;
 // Firmantes especiales que pueden aparecer en la etapa de firma
 const SPECIAL_SIGNERS=['JAVIER PERÓ OVALLE','JAVIER PERO OVALLE','MARIA CATALINA PAROT DONOSO','MARÍA CATALINA PAROT DONOSO','ENRIQUE MERCADAL'];
 
-// Mercadal tiene dualidad: visa en algunos docs, firma en otros (cuando no hay Peró ni Parot)
+// Mercadal tiene dualidad: visa en algunos docs, firma en otros (cuando no hay firmantes primarios)
 const DUAL_SIGNERS=['ENRIQUE MERCADAL'];
 
-// Firmantes que reemplazan a Mercadal: si están en la etapa firma, Mercadal solo visa
+// Si Peró o Parot están en la etapa firma, Mercadal solo visa en ese documento
 const PRIMARY_SIGNERS=['JAVIER PERÓ OVALLE','JAVIER PERO OVALLE','MARIA CATALINA PAROT DONOSO','MARÍA CATALINA PAROT DONOSO'];
-
-// Visadores que deben respetar orden secuencial
-const SEQUENTIAL_VISADORES=['CRISTIAN PARRAGUEZ LEIVA','STEFAN ANDRÉS GOECKE RUZ','STEFAN ANDRES GOECKE RUZ'];
 
 let docs=[]; let countdown=REFRESH_SECONDS; let timer=null; let running=false;
 const $=id=>document.getElementById(id);
@@ -106,7 +103,6 @@ const normName=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').
 const isSpecialSigner=p=>SPECIAL_SIGNERS.some(n=>normName(p.nombre).includes(normName(n)));
 const isDualSigner=p=>DUAL_SIGNERS.some(n=>normName(p.nombre).includes(normName(n)));
 const isPrimarySigner=p=>PRIMARY_SIGNERS.some(n=>normName(p.nombre).includes(normName(n)));
-const isSequentialVisador=p=>SEQUENTIAL_VISADORES.some(n=>normName(p.nombre).includes(normName(n)));
 const saveIds=ids=>localStorage.setItem(LS_IDS,JSON.stringify(ids.map(String)));
 const loadIds=()=>{try{const stored=localStorage.getItem(LS_IDS);if(stored){const ids=(JSON.parse(stored)||[]).map(String).filter(x=>/^\d{5}$/.test(x));if(ids.length)return ids;}}catch(e){}return DEFAULT_IDS.map(String).filter(x=>/^\d{5}$/.test(x));};
 
@@ -204,9 +200,14 @@ function buildAssignments(kind){
       const vis=readPeople(d,'visacion');
       for(const p of vis){
         if(!(p.estado==='pendiente'||p.estado==='desconocido'||p.estado==='rechazado')) continue;
-        const enabled=isSequentialVisador(p)?allPriorOk(vis,p.idx):true;
+
+        // ✅ Orden secuencial estricto para TODOS los visadores sin excepción:
+        // un visador solo se habilita si todos los anteriores en la cadena ya visaron.
+        const enabled=allPriorOk(vis,p.idx);
+
         if(show==='habilitados' && !enabled) continue;
-        add(map,p,{id:r.id,doc,person:p,nums,enabled,kind:'visador',reason:enabled?'Habilitado para visar':'Aún no habilitado: falta visación previa'});
+        add(map,p,{id:r.id,doc,person:p,nums,enabled,kind:'visador',
+          reason:enabled?'Habilitado para visar':'Aún no habilitado: falta visación previa'});
       }
     }
 
@@ -223,41 +224,29 @@ function buildAssignments(kind){
         const enabled=visOk && allPriorOk(firma,p.idx);
         if(show==='habilitados' && !enabled) continue;
         addedForDoc.add(normName(p.nombre));
-        add(map,p,{id:r.id,doc,person:p,nums,enabled,kind:'firmante',reason:enabled?'Habilitado para firma':'Aún no habilitado: faltan visaciones previas'});
+        add(map,p,{id:r.id,doc,person:p,nums,enabled,kind:'firmante',
+          reason:enabled?'Habilitado para firma':'Aún no habilitado: faltan visaciones previas'});
       }
 
-      // Paso 2: Mercadal como firmante virtual (dualidad)
-      // Solo aplica si:
-      //   a) Aparece en visación Y ya completó su visado (estado ok)
-      //   b) NO hay firmantes primarios (Peró / Parot) en la etapa firma
+      // Paso 2: Mercadal como firmante virtual (dualidad visador/firmante)
+      // Solo aplica cuando:
+      //   a) No hay firmantes primarios (Peró / Parot) en la etapa firma
       //      → si los hay, Mercadal solo visa en este documento
-      //   c) No fue ya agregado desde la etapa firma (evita duplicados)
-      //   d) Todas las visaciones del documento están completas (visOk)
+      //   b) Mercadal aparece en visación y ya completó su visado (estado ok)
+      //   c) Todas las visaciones del documento están completas (visOk)
+      //   d) No fue ya agregado desde la etapa firma (evita duplicados)
       const hayFirmantePrimario=firma.some(f=>isPrimarySigner(f));
-
       if(!hayFirmantePrimario){
         for(const p of vis){
           if(!isDualSigner(p)) continue;
           if(addedForDoc.has(normName(p.nombre))) continue;
           if(p.estado==='rechazado') continue;
-
-          // Mercadal debe haber completado su propia visación
-          if(p.estado!=='ok') continue;
-
-          // Todas las visaciones del documento deben estar completas
+          if(p.estado!=='ok') continue; // debe haber completado su visación
           const enabled=visOk;
           if(show==='habilitados' && !enabled) continue;
-
-          const firmanteVirtual={
-            ...p,
-            stage:'firma',
-            estado:'pendiente',
-            estadoRaw:'Pendiente de firma'
-          };
-          add(map,firmanteVirtual,{
-            id:r.id, doc, person:firmanteVirtual, nums, enabled, kind:'firmante',
-            reason:enabled?'Habilitado para firma':'Aún no habilitado: faltan visaciones previas'
-          });
+          const firmanteVirtual={...p,stage:'firma',estado:'pendiente',estadoRaw:'Pendiente de firma'};
+          add(map,firmanteVirtual,{id:r.id,doc,person:firmanteVirtual,nums,enabled,kind:'firmante',
+            reason:enabled?'Habilitado para firma':'Aún no habilitado: faltan visaciones previas'});
         }
       }
     }
