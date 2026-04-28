@@ -94,6 +94,9 @@ const DUAL_SIGNERS=['ENRIQUE MERCADAL'];
 // Si Peró o Parot están en la etapa firma, Mercadal solo visa en ese documento
 const PRIMARY_SIGNERS=['JAVIER PERÓ OVALLE','JAVIER PERO OVALLE','MARIA CATALINA PAROT DONOSO','MARÍA CATALINA PAROT DONOSO'];
 
+// Jefes de gabinete: visadores que solo se habilitan cuando TODOS los demás visadores ya visaron
+const LAST_VISADORES=['CRISTIAN PARRAGUEZ LEIVA','STEFAN ANDRÉS GOECKE RUZ','STEFAN ANDRES GOECKE RUZ'];
+
 let docs=[]; let countdown=REFRESH_SECONDS; let timer=null; let running=false;
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -103,6 +106,7 @@ const normName=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').
 const isSpecialSigner=p=>SPECIAL_SIGNERS.some(n=>normName(p.nombre).includes(normName(n)));
 const isDualSigner=p=>DUAL_SIGNERS.some(n=>normName(p.nombre).includes(normName(n)));
 const isPrimarySigner=p=>PRIMARY_SIGNERS.some(n=>normName(p.nombre).includes(normName(n)));
+const isLastVisador=p=>LAST_VISADORES.some(n=>normName(p.nombre).includes(normName(n)));
 const saveIds=ids=>localStorage.setItem(LS_IDS,JSON.stringify(ids.map(String)));
 const loadIds=()=>{try{const stored=localStorage.getItem(LS_IDS);if(stored){const ids=(JSON.parse(stored)||[]).map(String).filter(x=>/^\d{5}$/.test(x));if(ids.length)return ids;}}catch(e){}return DEFAULT_IDS.map(String).filter(x=>/^\d{5}$/.test(x));};
 
@@ -201,9 +205,18 @@ function buildAssignments(kind){
       for(const p of vis){
         if(!(p.estado==='pendiente'||p.estado==='desconocido'||p.estado==='rechazado')) continue;
 
-        // ✅ Orden secuencial estricto para TODOS los visadores sin excepción:
-        // un visador solo se habilita si todos los anteriores en la cadena ya visaron.
-        const enabled=allPriorOk(vis,p.idx);
+        let enabled;
+        if(isLastVisador(p)){
+          // ✅ Jefes de gabinete (Parraguez, Goecke): solo se habilitan cuando
+          // TODOS los demás visadores del documento ya han visado
+          enabled=vis
+            .filter(v=>normName(v.nombre)!==normName(p.nombre))
+            .every(v=>v.estado==='ok');
+        } else {
+          // Resto de visadores: orden secuencial normal
+          // (solo necesitan que los anteriores a ellos estén ok)
+          enabled=allPriorOk(vis,p.idx);
+        }
 
         if(show==='habilitados' && !enabled) continue;
         add(map,p,{id:r.id,doc,person:p,nums,enabled,kind:'visador',
@@ -229,19 +242,15 @@ function buildAssignments(kind){
       }
 
       // Paso 2: Mercadal como firmante virtual (dualidad visador/firmante)
-      // Solo aplica cuando:
-      //   a) No hay firmantes primarios (Peró / Parot) en la etapa firma
-      //      → si los hay, Mercadal solo visa en este documento
-      //   b) Mercadal aparece en visación y ya completó su visado (estado ok)
-      //   c) Todas las visaciones del documento están completas (visOk)
-      //   d) No fue ya agregado desde la etapa firma (evita duplicados)
+      // Solo aplica cuando no hay firmantes primarios (Peró / Parot) en la etapa firma,
+      // Mercadal ya completó su visado y todas las visaciones del documento están ok
       const hayFirmantePrimario=firma.some(f=>isPrimarySigner(f));
       if(!hayFirmantePrimario){
         for(const p of vis){
           if(!isDualSigner(p)) continue;
           if(addedForDoc.has(normName(p.nombre))) continue;
           if(p.estado==='rechazado') continue;
-          if(p.estado!=='ok') continue; // debe haber completado su visación
+          if(p.estado!=='ok') continue;
           const enabled=visOk;
           if(show==='habilitados' && !enabled) continue;
           const firmanteVirtual={...p,stage:'firma',estado:'pendiente',estadoRaw:'Pendiente de firma'};
