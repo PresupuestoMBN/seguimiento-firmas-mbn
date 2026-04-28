@@ -94,7 +94,8 @@ const DUAL_SIGNERS=['ENRIQUE MERCADAL'];
 // Si Peró o Parot están en la etapa firma, Mercadal solo visa en ese documento
 const PRIMARY_SIGNERS=['JAVIER PERÓ OVALLE','JAVIER PERO OVALLE','MARIA CATALINA PAROT DONOSO','MARÍA CATALINA PAROT DONOSO'];
 
-// Jefes de gabinete: visadores que solo se habilitan cuando TODOS los demás visadores ya visaron
+// Jefes de gabinete: visadores que solo se habilitan cuando TODOS los visadores
+// que NO son jefes de gabinete ya han visado (independiente del orden en el array de la API)
 const LAST_VISADORES=['CRISTIAN PARRAGUEZ LEIVA','STEFAN ANDRÉS GOECKE RUZ','STEFAN ANDRES GOECKE RUZ'];
 
 let docs=[]; let countdown=REFRESH_SECONDS; let timer=null; let running=false;
@@ -207,14 +208,16 @@ function buildAssignments(kind){
 
         let enabled;
         if(isLastVisador(p)){
-          // ✅ Jefes de gabinete (Parraguez, Goecke): solo se habilitan cuando
-          // TODOS los demás visadores del documento ya han visado
+          // ✅ Jefes de gabinete (Parraguez, Goecke): se habilitan solo cuando
+          // TODOS los visadores que NO son jefes de gabinete ya han visado.
+          // Se ignora el orden del array de la API — lo que importa es que
+          // todos los "no-jefes" estén ok, independiente de su posición.
           enabled=vis
-            .filter(v=>normName(v.nombre)!==normName(p.nombre))
+            .filter(v=>!isLastVisador(v))
             .every(v=>v.estado==='ok');
         } else {
-          // Resto de visadores: orden secuencial normal
-          // (solo necesitan que los anteriores a ellos estén ok)
+          // Visadores normales: orden secuencial estricto
+          // (se habilitan cuando todos los anteriores a ellos en el array ya visaron)
           enabled=allPriorOk(vis,p.idx);
         }
 
