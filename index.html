@@ -78,27 +78,30 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 'use strict';
-
+// =====================================================
+// CONFIGURACIÓN API PARA PUBLICACIÓN EN GITHUB PAGES
+// =====================================================
+// GitHub Pages sirve este HTML desde un dominio github.io.
+// Si la API del sistema de firma no permite CORS para ese dominio,
+// el navegador bloqueará la consulta directa. Por eso este panel
+// intenta conexión directa y, si falla, usa un proxy CORS de apoyo.
+//
+// Producción ideal: reemplazar CORS_PROXIES por un proxy institucional
+// controlado por TI, por ejemplo:
+// const CORS_PROXIES = ['https://tu-dominio-interno/api/firma?url='];
+// =====================================================
 const API_BASE='https://sistemas.mbienes.gob.cl/web/sitios/firma/get_datos_firma.php?id=';
-const CORS_PROXIES=['https://api.allorigins.win/get?url='];
+const CORS_PROXIES=[
+  'https://api.allorigins.win/get?url='
+];
 const IS_GITHUB_PAGES=location.hostname.endsWith('github.io');
 const LS_IDS='panel_firma_ids_v5';
+// IDs preconfigurados para que cualquier persona que abra el enlace vea el panel listo.
+// Si se guardan IDs desde "Parametrizar", esos reemplazan estos valores solo en ese navegador.
 const DEFAULT_IDS=['59720','59703','59688','59514','59499','59422','57551','57542','59983','59893','60145'];
 const REFRESH_SECONDS=300;
-
-// ─── ÚNICO CAMBIO: se agregó ENRIQUE MERCADAL MOYA ───────────────────────────
-// Puede aparecer en la API con o sin tilde. Ambas variantes cubren el match.
-// Al estar en esta lista, si aparece como firmante y las visaciones están
-// completas, el panel lo mostrará en la sección "Firmantes habilitados".
-// Si además aparece como visador en el mismo u otro doc, seguirá apareciendo
-// también en "Visadores habilitados" — ambos roles son independientes.
-const SPECIAL_SIGNERS=[
-  'JAVIER PERÓ OVALLE','JAVIER PERO OVALLE',
-  'MARIA CATALINA PAROT DONOSO','MARÍA CATALINA PAROT DONOSO',
-  'ENRIQUE MERCADAL MOYA','ENRIQUE MERCADAL MOYA'
-];
-// ─────────────────────────────────────────────────────────────────────────────
-
+const SPECIAL_SIGNERS=['JAVIER PERÓ OVALLE','JAVIER PERO OVALLE','MARIA CATALINA PAROT DONOSO','MARÍA CATALINA PAROT DONOSO','ENRIQUE MERCADAL'];
+const DUAL_SIGNERS=['ENRIQUE MERCADAL'];
 const SEQUENTIAL_VISADORES=['CRISTIAN PARRAGUEZ LEIVA','STEFAN ANDRÉS GOECKE RUZ','STEFAN ANDRES GOECKE RUZ'];
 let docs=[]; let countdown=REFRESH_SECONDS; let timer=null; let running=false;
 const $=id=>document.getElementById(id);
@@ -107,6 +110,7 @@ const cleanId=v=>String(v??'').trim();
 const parseIds=raw=>[...new Set(String(raw||'').split(/[^0-9]+/).map(cleanId).filter(x=>/^\d{5}$/.test(x)))];
 const normName=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ').trim();
 const isSpecialSigner=p=>SPECIAL_SIGNERS.some(n=>normName(p.nombre).includes(normName(n)));
+const isDualSigner=p=>DUAL_SIGNERS.some(n=>normName(p.nombre).includes(normName(n)));
 const isSequentialVisador=p=>SEQUENTIAL_VISADORES.some(n=>normName(p.nombre).includes(normName(n)));
 const saveIds=ids=>localStorage.setItem(LS_IDS,JSON.stringify(ids.map(String)));
 const loadIds=()=>{try{const stored=localStorage.getItem(LS_IDS);if(stored){const ids=(JSON.parse(stored)||[]).map(String).filter(x=>/^\d{5}$/.test(x));if(ids.length)return ids;}}catch(e){}return DEFAULT_IDS.map(String).filter(x=>/^\d{5}$/.test(x));};
@@ -136,17 +140,22 @@ function isFinalizado(r){
   return firmasOk && enumOk && visOk;
 }
 function initials(n){return String(n||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?'}
-async function fetchTextWithTimeout(url,timeoutMs=8000){
+async function fetchTextWithTimeout(url, timeoutMs=8000){
   const ctrl=new AbortController();
   const t=setTimeout(()=>ctrl.abort(),timeoutMs);
-  try{const r=await fetch(url,{signal:ctrl.signal,cache:'no-store'}); if(!r.ok)throw new Error('HTTP '+r.status); return await r.text();}
-  finally{clearTimeout(t);}
+  try{
+    const r=await fetch(url,{signal:ctrl.signal,cache:'no-store'});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return await r.text();
+  } finally { clearTimeout(t); }
 }
 function parseApiPayload(text){
   let data;
-  try{data=JSON.parse(text);}catch{throw new Error('Respuesta no es JSON');}
+  try{ data=JSON.parse(text); }
+  catch{ throw new Error('Respuesta no es JSON'); }
   if(data && typeof data==='object' && typeof data.contents==='string'){
-    try{data=JSON.parse(data.contents);}catch{throw new Error('Proxy respondió, pero contents no es JSON');}
+    try{ data=JSON.parse(data.contents); }
+    catch{ throw new Error('Proxy respondió, pero contents no es JSON'); }
   }
   return data;
 }
@@ -167,9 +176,19 @@ async function fetchDocProxy(clean){
 async function fetchDoc(id){
   const clean=cleanId(id);
   if(!/^\d{5}$/.test(clean))return{id:clean,ok:false,reason:'ID inválido: debe tener 5 dígitos.',data:null};
+
   const errors=[];
-  try{return await fetchDocDirect(clean);}catch(e){errors.push('directo: '+(e.message||e.name||'error'));}
-  try{return await fetchDocProxy(clean);}catch(e){errors.push('proxy: '+(e.message||e.name||'error'));}
+
+  // Primero se intenta directo. Si la API permite CORS, esta es la vía más rápida.
+  // Si GitHub Pages es bloqueado por CORS, el error suele ser inmediato y pasa al proxy.
+  try{ return await fetchDocDirect(clean); }
+  catch(e){ errors.push('directo: '+(e.message||e.name||'error')); }
+
+  // Fallback para GitHub Pages cuando la API no permite llamadas desde github.io.
+  // No se usa cache local: cada actualización consulta la API nuevamente.
+  try{ return await fetchDocProxy(clean); }
+  catch(e){ errors.push('proxy: '+(e.message||e.name||'error')); }
+
   return{id:clean,ok:false,reason:'No se pudo conectar con la API. '+errors.join(' | '),data:null};
 }
 async function fetchAllDocs(ids,onItem){
@@ -188,6 +207,7 @@ async function fetchAllDocs(ids,onItem){
   await Promise.all(Array.from({length:Math.min(concurrency,ids.length)},worker));
   return out;
 }
+
 function buildAssignments(kind){
   const q=$('q').value.toLowerCase().trim(); const show=$('show').value; const map={};
   for(const r of docs){const d=r.data, doc=d?.documento||{}, nums=numbers(d); if(!r.ok)continue;
@@ -201,13 +221,31 @@ function buildAssignments(kind){
       }
     }
     if(kind==='firmante'){
-      const firma=readPeople(d,'firma'); const visOk=allVisacionOk(d);
+      const firma=readPeople(d,'firma');
+      const vis=readPeople(d,'visacion');
+      const visOk=allVisacionOk(d);
+      const addedForDoc=new Set();
+
+      // Firmantes que vienen explícitamente en la etapa de firma.
       for(const p of firma){
         if(!isSpecialSigner(p))continue;
         if(!(p.estado==='pendiente'||p.estado==='desconocido'||p.estado==='rechazado'))continue;
         const enabled=visOk;
         if(show==='habilitados' && !enabled)continue;
+        addedForDoc.add(normName(p.nombre));
         add(map,p,{id:r.id,doc,person:p,nums,enabled,kind:'firmante',reason:enabled?'Habilitado para firma':'Aún no habilitado: faltan visaciones previas'});
+      }
+
+      // Caso especial: Enrique Mercadal tiene dualidad. Si aparece en la cadena de visación
+      // y todos los anteriores ya visaron, también debe mostrarse como pendiente de firma.
+      for(const p of vis){
+        if(!isDualSigner(p))continue;
+        if(addedForDoc.has(normName(p.nombre)))continue;
+        if(!(p.estado==='pendiente'||p.estado==='desconocido'||p.estado==='rechazado'))continue;
+        const enabled=allPriorOk(vis,p.idx);
+        if(show==='habilitados' && !enabled)continue;
+        const firmanteVirtual={...p,stage:'firma'};
+        add(map,firmanteVirtual,{id:r.id,doc,person:firmanteVirtual,nums,enabled,kind:'firmante',reason:enabled?'Habilitado para firma':'Aún no habilitado: faltan visaciones previas'});
       }
     }
   }
@@ -230,6 +268,7 @@ async function update(){
   $('refreshBtn').textContent='Consultando...';
   docs=[];
   notice('Consultando API... 0/'+ids.length);
+
   let raw=[];
   try{
     raw=await fetchAllDocs(ids,(item,done,total,partial)=>{
@@ -242,6 +281,7 @@ async function update(){
     $('refreshBtn').textContent='Actualizar';
     running=false;
   }
+
   docs=raw.filter(r=>!isFinalizado(r));
   countdown=REFRESH_SECONDS;
   const errors=docs.filter(r=>!r.ok).length;
@@ -257,7 +297,19 @@ function rowsHabilitados(){
   for(const kind of ['visador','firmante']){
     for(const x of buildAssignments(kind)){
       for(const it of x.items){
-        rows.push({Persona:x.nombre,Rol:kind==='firmante'?'Firmante':'Visador',Dependencia:x.dependencia||'',Accion:lbl[it.person.stage]||it.person.stage,Habilitado:it.enabled?'Sí':'No',Motivo:it.reason||'',Estado:it.person.estadoRaw||it.person.estado||'',ID_Firma:String(it.id),Numeracion:it.nums.join('; '),Documento:it.doc?.tema||'',Fecha_Creacion:it.doc?.fecha_creacion||''});
+        rows.push({
+          Persona:x.nombre,
+          Rol:kind==='firmante'?'Firmante':'Visador',
+          Dependencia:x.dependencia||'',
+          Accion:lbl[it.person.stage]||it.person.stage,
+          Habilitado:it.enabled?'Sí':'No',
+          Motivo:it.reason||'',
+          Estado:it.person.estadoRaw||it.person.estado||'',
+          ID_Firma:String(it.id),
+          Numeracion:it.nums.join('; '),
+          Documento:it.doc?.tema||'',
+          Fecha_Creacion:it.doc?.fecha_creacion||''
+        });
       }
     }
   }
@@ -267,42 +319,78 @@ function rowsDetalleDocumentos(){
   const rows=[];
   for(const r of docs){
     const d=r.data, doc=d?.documento||{};
-    if(!r.ok){rows.push({ID_Firma:String(r.id),Documento:'',Etapa:'Error API',Persona:'',Dependencia:'',Estado:r.reason||'Error',Numeracion:'',Estado_Documento:'Error'});continue;}
+    if(!r.ok){
+      rows.push({ID_Firma:String(r.id), Documento:'', Etapa:'Error API', Persona:'', Dependencia:'', Estado:r.reason||'Error', Numeracion:'', Estado_Documento:'Error'});
+      continue;
+    }
     for(const etapa of ['visacion','firma','enumeracion']){
       const personas=readPeople(d,etapa);
-      if(!personas.length){rows.push({ID_Firma:String(r.id),Codigo:doc.codigo||'',Documento:doc.tema||'',Fecha_Creacion:doc.fecha_creacion||'',Etapa:lbl[etapa],Persona:'Sin registros',Dependencia:'',Estado:'',Numeracion:'',Estado_Documento:statusDoc(r)});}
-      else{for(const p of personas){rows.push({ID_Firma:String(r.id),Codigo:doc.codigo||'',Documento:doc.tema||'',Fecha_Creacion:doc.fecha_creacion||'',Etapa:lbl[etapa],Persona:p.nombre||'',Dependencia:p.dependencia||'',Estado:p.estadoRaw||p.estado||'',Numeracion:p.numero||'',Estado_Documento:statusDoc(r)});}}
+      if(!personas.length){
+        rows.push({ID_Firma:String(r.id), Codigo:doc.codigo||'', Documento:doc.tema||'', Fecha_Creacion:doc.fecha_creacion||'', Etapa:lbl[etapa], Persona:'Sin registros', Dependencia:'', Estado:'', Numeracion:'', Estado_Documento:statusDoc(r)});
+      } else {
+        for(const p of personas){
+          rows.push({
+            ID_Firma:String(r.id),
+            Codigo:doc.codigo||'',
+            Documento:doc.tema||'',
+            Fecha_Creacion:doc.fecha_creacion||'',
+            Etapa:lbl[etapa],
+            Persona:p.nombre||'',
+            Dependencia:p.dependencia||'',
+            Estado:p.estadoRaw||p.estado||'',
+            Numeracion:p.numero||'',
+            Estado_Documento:statusDoc(r)
+          });
+        }
+      }
     }
   }
   return rows;
 }
 function rowsResumen(){
   const vis=buildAssignments('visador'), firm=buildAssignments('firmante');
-  return [{Indicador:'Documentos consultados',Valor:docs.length},{Indicador:'Visadores habilitados',Valor:vis.length},{Indicador:'Firmantes habilitados',Valor:firm.length},{Indicador:'Acciones habilitadas',Valor:vis.reduce((a,p)=>a+p.items.length,0)+firm.reduce((a,p)=>a+p.items.length,0)},{Indicador:'Rechazos / observaciones',Valor:docs.filter(r=>statusDoc(r)==='rechazado').length},{Indicador:'Documentos con numeración',Valor:docs.filter(r=>numbers(r.data).length).length},{Indicador:'Fecha exportación',Valor:new Date().toLocaleString('es-CL')}];
+  return [
+    {Indicador:'Documentos consultados', Valor:docs.length},
+    {Indicador:'Visadores habilitados', Valor:vis.length},
+    {Indicador:'Firmantes habilitados', Valor:firm.length},
+    {Indicador:'Acciones habilitadas', Valor:vis.reduce((a,p)=>a+p.items.length,0)+firm.reduce((a,p)=>a+p.items.length,0)},
+    {Indicador:'Rechazos / observaciones', Valor:docs.filter(r=>statusDoc(r)==='rechazado').length},
+    {Indicador:'Documentos con numeración', Valor:docs.filter(r=>numbers(r.data).length).length},
+    {Indicador:'Fecha exportación', Valor:new Date().toLocaleString('es-CL')}
+  ];
 }
-function autosize(ws,rows){const keys=[...new Set(rows.flatMap(r=>Object.keys(r)))];ws['!cols']=keys.map(k=>({wch:Math.min(Math.max(k.length+2,...rows.map(r=>String(r[k]??'').length+2),10),70)}));}
+function autosize(ws, rows){
+  const keys=[...new Set(rows.flatMap(r=>Object.keys(r)))];
+  ws['!cols']=keys.map(k=>({wch:Math.min(Math.max(k.length+2, ...rows.map(r=>String(r[k]??'').length+2), 10), 70)}));
+}
 function exportExcel(){
   if(!docs.length){toast('Sin datos para exportar');return;}
-  if(typeof XLSX==='undefined'){toast('No se cargó la librería Excel.');return;}
-  const resumen=rowsResumen(), habilitados=rowsHabilitados(), detalle=rowsDetalleDocumentos();
-  const errores=docs.filter(r=>!r.ok).map(r=>({ID_Firma:String(r.id),Error:r.reason||'Error no especificado'}));
+  if(typeof XLSX==='undefined'){
+    toast('No se cargó la librería Excel. Revisa conexión o instala SheetJS en la intranet.');
+    return;
+  }
+  const resumen=rowsResumen();
+  const habilitados=rowsHabilitados();
+  const detalle=rowsDetalleDocumentos();
+  const errores=docs.filter(r=>!r.ok).map(r=>({ID_Firma:String(r.id), Error:r.reason||'Error no especificado'}));
   const wb=XLSX.utils.book_new();
-  const sheets=[['Resumen',resumen],['Habilitados',habilitados.length?habilitados:[{Mensaje:'Sin acciones habilitadas con los filtros actuales'}]],['Detalle_documentos',detalle.length?detalle:[{Mensaje:'Sin detalle'}]],['Errores_API',errores.length?errores:[{Mensaje:'Sin errores'}]]];
-  for(const [name,rows] of sheets){const ws=XLSX.utils.json_to_sheet(rows);autosize(ws,rows);XLSX.utils.book_append_sheet(wb,ws,name);}
+  const sheets=[
+    ['Resumen', resumen],
+    ['Habilitados', habilitados.length?habilitados:[{Mensaje:'Sin acciones habilitadas con los filtros actuales'}]],
+    ['Detalle_documentos', detalle.length?detalle:[{Mensaje:'Sin detalle'}]],
+    ['Errores_API', errores.length?errores:[{Mensaje:'Sin errores'}]]
+  ];
+  for(const [name, rows] of sheets){
+    const ws=XLSX.utils.json_to_sheet(rows);
+    autosize(ws, rows);
+    XLSX.utils.book_append_sheet(wb, ws, name);
+  }
   XLSX.writeFile(wb,'panel_firma_'+new Date().toISOString().slice(0,10)+'.xlsx');
   toast('Excel generado');
 }
 function copyText(text){navigator.clipboard?.writeText(String(text)).then(()=>toast('Copiado')).catch(()=>toast('No se pudo copiar'))}
-function tick(){countdown--; if(countdown<=0){countdown=REFRESH_SECONDS;update()} const m=String(Math.floor(countdown/60)); const s=String(countdown%60).padStart(2,'0'); $('autoBox').textContent='Auto: '+m+':'+s}
-$('configBtn').onclick=openConfig; $('closeBtn').onclick=closeConfig; $('refreshBtn').onclick=update; $('exportBtn').onclick=exportExcel;
-$('saveBtn').onclick=()=>{const ids=parseIds($('idsBox').value); if(!ids.length){toast('No hay IDs válidos');return} saveIds(ids);closeConfig();update()};
-$('clearBtn').onclick=()=>{localStorage.removeItem(LS_IDS);$('idsBox').value=DEFAULT_IDS.join('\n');toast('Se restauró la lista base');update()};
-['q','show','sort'].forEach(id=>$(id).addEventListener('input',render));
-$('clearFiltersBtn').onclick=()=>{$('q').value='';$('show').value='habilitados';$('sort').value='count';render()};
-document.addEventListener('click',e=>{
-  const card=e.target.closest('[data-toggle-card]'); if(card)card.closest('.person-card').classList.toggle('open');
-  const btn=e.target.closest('[data-copy]'); if(btn)copyText(btn.getAttribute('data-copy'));
-});
+function tick(){countdown--; if(countdown<=0){countdown=REFRESH_SECONDS; update()} const m=String(Math.floor(countdown/60)); const s=String(countdown%60).padStart(2,'0'); $('autoBox').textContent='Auto: '+m+':'+s}
+$('configBtn').onclick=openConfig; $('closeBtn').onclick=closeConfig; $('refreshBtn').onclick=update; $('exportBtn').onclick=exportExcel; $('saveBtn').onclick=()=>{const ids=parseIds($('idsBox').value); if(!ids.length){toast('No hay IDs válidos');return} saveIds(ids); closeConfig(); update()}; $('clearBtn').onclick=()=>{localStorage.removeItem(LS_IDS);$('idsBox').value=DEFAULT_IDS.join('\n');toast('Se restauró la lista base');update()}; ['q','show','sort'].forEach(id=>$(id).addEventListener('input',render)); $('clearFiltersBtn').onclick=()=>{$('q').value='';$('show').value='habilitados';$('sort').value='count';render()}; document.addEventListener('click',e=>{const card=e.target.closest('[data-toggle-card]'); if(card)card.closest('.person-card').classList.toggle('open'); const btn=e.target.closest('[data-copy]'); if(btn)copyText(btn.getAttribute('data-copy'))});
 render(); timer=setInterval(tick,1000); if(!loadIds().length)openConfig(); else update();
 </script>
 </body>
