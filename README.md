@@ -1,2 +1,347 @@
-# seguimiento-firmas-mbn
-anel de seguimiento de visación y firma de documentos - Ministerio de Bienes Nacionales
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel de Firma</title>
+<style>
+:root{
+  --bg:#f4f6f8;--surface:#fff;--soft:#f9fafb;--border:#dde3ea;--text:#111827;--muted:#64748b;--faint:#94a3b8;
+  --blue:#1d4ed8;--blue-bg:#eff6ff;--blue-b:#bfdbfe;--amber:#b45309;--amber-bg:#fffbeb;--amber-b:#fde68a;
+  --red:#b91c1c;--red-bg:#fef2f2;--red-b:#fecaca;--green:#047857;--green-bg:#ecfdf5;--green-b:#bbf7d0;
+  --purple:#6d28d9;--purple-bg:#f5f3ff;--purple-b:#ddd6fe;--shadow:0 1px 3px rgba(15,23,42,.08),0 12px 34px rgba(15,23,42,.06);
+  font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-size:14px;line-height:1.45}button,input,textarea,select{font:inherit}button{cursor:pointer}
+.top{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:12px 22px;display:flex;justify-content:space-between;align-items:center;gap:12px;box-shadow:0 1px 8px rgba(15,23,42,.04)}
+.brand{display:flex;align-items:center;gap:11px}.logo{width:38px;height:38px;border-radius:12px;background:var(--blue);color:white;display:grid;place-items:center;font-weight:950}.brand h1{margin:0;font-size:16px}.brand p{margin:1px 0 0;color:var(--muted);font-size:12px}.top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.statusbar{font-size:12px;color:var(--muted);white-space:nowrap}
+.btn{border:1px solid var(--border);background:var(--surface);border-radius:10px;padding:8px 12px;font-weight:850;color:var(--text)}.btn:hover{background:var(--soft)}.btn.primary{background:var(--blue);border-color:var(--blue);color:white}.btn.danger{background:var(--red-bg);border-color:var(--red-b);color:var(--red)}.btn:disabled{opacity:.55;cursor:not-allowed}.mini{padding:5px 9px;border-radius:8px;border:1px solid var(--border);background:white;font-size:12px;font-weight:850}.mini:hover{background:var(--soft)}
+.wrap{max-width:1260px;margin:0 auto;padding:18px}.notice{display:none;margin-bottom:14px;border:1px solid var(--amber-b);background:var(--amber-bg);color:var(--amber);padding:10px 12px;border-radius:12px;font-size:12px;font-weight:750}.notice.on{display:block}.notice.err{border-color:var(--red-b);background:var(--red-bg);color:var(--red)}
+.config{display:none;background:var(--surface);border:2px solid var(--blue-b);border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:var(--shadow)}.config.on{display:block}.config h2{font-size:16px;margin:0 0 4px}.small{font-size:12px;color:var(--muted)}textarea,input,select{width:100%;border:1px solid var(--border);border-radius:10px;background:white;color:var(--text);padding:9px 10px}textarea{min-height:126px;resize:vertical;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.config-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}.hint{background:var(--soft);border:1px dashed var(--border);border-radius:12px;padding:10px;color:var(--muted);font-size:12px}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px}.kpi{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:var(--shadow)}.kpi b{display:block;font-size:27px;letter-spacing:-.04em}.kpi span{font-size:12px;color:var(--muted)}.kpi.red b{color:var(--red)}.kpi.amber b{color:var(--amber)}.kpi.green b{color:var(--green)}.kpi.blue b{color:var(--blue)}.kpi.purple b{color:var(--purple)}
+.filters{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px;margin-bottom:14px;display:grid;grid-template-columns:1.4fr .75fr .75fr auto;gap:10px;align-items:end;box-shadow:var(--shadow)}.filters label{display:block;font-size:11px;font-weight:950;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.03em}
+.section-title{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:18px 0 10px}.section-title h2{font-size:16px;margin:0}.section-title p{margin:2px 0 0;color:var(--muted);font-size:12px}.section-title .right{font-size:12px;color:var(--muted);white-space:nowrap}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(380px,100%),1fr));gap:12px}.person-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}.person-head{width:100%;border:0;background:transparent;text-align:left;padding:14px 15px;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center}.person-head:hover{background:var(--soft)}.avatar{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--blue-bg);color:var(--blue);font-weight:950;border:2px solid var(--blue-b)}.avatar.sign{background:var(--purple-bg);color:var(--purple);border-color:var(--purple-b)}.person-name{font-weight:950;font-size:14px;line-height:1.25;text-transform:uppercase}.person-sub{color:var(--muted);font-size:12px;margin-top:2px}.count{font-size:26px;font-weight:950;letter-spacing:-.04em;text-align:right}.count-label{font-size:10px;color:var(--muted);text-align:right;text-transform:uppercase}.chev{color:var(--faint);font-weight:950;margin-left:8px}.person-card.open .chev{transform:rotate(90deg)}.person-body{display:none;border-top:1px solid var(--border);padding:10px 15px 14px}.person-card.open .person-body{display:block}.person-tools{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px}.badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:850;border:1px solid var(--border);background:#f3f4f6;white-space:nowrap}.badge.blue{background:var(--blue-bg);color:var(--blue);border-color:var(--blue-b)}.badge.purple{background:var(--purple-bg);color:var(--purple);border-color:var(--purple-b)}.badge.pending{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-b)}.badge.reject{background:var(--red-bg);color:var(--red);border-color:var(--red-b)}.badge.ok{background:var(--green-bg);color:var(--green);border-color:var(--green-b)}.badge.wait{background:#f1f5f9;color:#64748b;border-color:#cbd5e1}
+.pending-list{display:flex;flex-direction:column;gap:8px}.todo{border:1px solid var(--border);background:var(--soft);border-radius:14px;padding:10px}.todo-title{font-weight:900;font-size:12px;margin-bottom:6px;line-height:1.3}.todo-meta{display:flex;gap:5px;flex-wrap:wrap}.todo-foot{margin-top:7px;color:var(--muted);font-size:11px}.empty{background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:28px;text-align:center;color:var(--muted)}
+.docs{margin-top:16px}.doc{background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);margin-bottom:10px;overflow:hidden}.doc summary{cursor:pointer;list-style:none;padding:13px 14px}.doc summary::-webkit-details-marker{display:none}.doc-title{font-weight:950;margin-bottom:6px}.doc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 14px 14px}.stage{border:1px solid var(--border);border-radius:12px;padding:10px;background:var(--soft)}.stage h3{font-size:12px;margin:0 0 8px;text-transform:uppercase;color:var(--muted);letter-spacing:.04em}.line{padding:6px 0;border-top:1px solid var(--border)}.line:first-of-type{border-top:0}.line b{font-size:12px}.line p{margin:2px 0 0;color:var(--muted);font-size:11px}.toast{position:fixed;right:18px;bottom:18px;background:#111827;color:white;padding:10px 14px;border-radius:12px;box-shadow:var(--shadow);opacity:0;transform:translateY(10px);transition:.2s;z-index:50}.toast.on{opacity:1;transform:translateY(0)}
+@media(max-width:1000px){.kpis{grid-template-columns:repeat(3,1fr)}.doc-grid{grid-template-columns:1fr}.filters,.config-grid{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}.top-actions{width:100%}.top-actions .btn{flex:1}.wrap{padding:14px}}@media(max-width:560px){.kpis{grid-template-columns:1fr 1fr}.brand h1{font-size:14px}.cards{grid-template-columns:1fr}.person-head{grid-template-columns:auto 1fr}.person-head>div:last-child{grid-column:2}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><div class="logo">F</div><div><h1>Panel de seguimiento de firma</h1><p>Visadores y firmantes habilitados · seguimiento ejecutivo de pendientes</p></div></div>
+  <div class="top-actions"><span class="statusbar" id="autoBox">Auto: 5:00</span><button class="btn" id="configBtn">Parametrizar</button><button class="btn primary" id="refreshBtn">Actualizar</button><button class="btn" id="exportBtn">Exportar Excel</button></div>
+</header>
+<main class="wrap">
+  <div class="notice" id="notice"></div>
+  <section class="config" id="config">
+    <h2>Parametrización</h2><p class="small">Ingresa los números de expediente del sistema de firma. Se tratan siempre como texto, por lo que se conservan ceros iniciales.</p>
+    <div class="config-grid">
+      <div><label class="small"><b>IDs del sistema de firma</b></label><textarea id="idsBox" placeholder="59736&#10;59737&#10;01234"></textarea></div>
+      <div class="hint"><b>Uso rápido</b><br>Ingresa uno o varios IDs del sistema de firma, separados por salto de línea, coma o espacio.<br><br>El panel mostrará solo lo operativo: quién debe visar o firmar, el ID exacto del sistema de firma, el nombre del documento y su estado actual.<br><br>No se muestran RUTs en pantalla.<br><br><b>Publicación en GitHub:</b> el panel usa conexión directa y fallback CORS. Si la API bloquea el dominio github.io, se conectará mediante proxy de apoyo.</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn primary" id="saveBtn">Guardar y consultar</button><button class="btn" id="closeBtn">Cerrar</button><button class="btn danger" id="clearBtn">Limpiar parámetros</button></div>
+  </section>
+
+  <section class="kpis">
+    <div class="kpi blue"><b id="kDocs">0</b><span>Documentos consultados</span></div>
+    <div class="kpi amber"><b id="kVisadores">0</b><span>Visadores habilitados</span></div>
+    <div class="kpi purple"><b id="kFirmantes">0</b><span>Firmantes habilitados</span></div>
+    <div class="kpi amber"><b id="kActions">0</b><span>Acciones habilitadas</span></div>
+    <div class="kpi red"><b id="kRejected">0</b><span>Rechazos / observaciones</span></div>
+    <div class="kpi green"><b id="kNumbers">0</b><span>Docs con numeración</span></div>
+  </section>
+
+  <section class="filters">
+    <div><label>Buscar</label><input id="q" placeholder="Nombre, documento, ID firma o número"></div>
+    <div><label>Mostrar</label><select id="show"><option value="habilitados">Solo habilitados</option><option value="todos">Todos los pendientes</option></select></div>
+    <div><label>Ordenar</label><select id="sort"><option value="count">Mayor carga</option><option value="name">Nombre A-Z</option></select></div>
+    <button class="btn" id="clearFiltersBtn">Limpiar</button>
+  </section>
+
+  <section>
+    <div class="section-title"><div><h2>Visadores habilitados</h2><p id="visSub">Personas que pueden visar ahora, según el orden de visación del documento.</p></div><span class="right" id="lastBox"></span></div>
+    <div class="cards" id="visCards"><div class="empty">Sin datos.</div></div>
+  </section>
+
+  <section>
+    <div class="section-title"><div><h2>Firmantes habilitados</h2><p id="firmSub">Firmantes que pueden firmar porque las visaciones anteriores están completas.</p></div></div>
+    <div class="cards" id="firmCards"><div class="empty">Sin datos.</div></div>
+  </section>
+
+  <section class="docs">
+    <div class="section-title"><div><h2>Detalle por documento</h2><p>Vista de auditoría para revisar quién visó, quién firmó y qué etapa sigue.</p></div></div>
+    <div id="docList"><div class="empty">Sin documentos consultados.</div></div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+'use strict';
+// =====================================================
+// CONFIGURACIÓN API PARA PUBLICACIÓN EN GITHUB PAGES
+// =====================================================
+// GitHub Pages sirve este HTML desde un dominio github.io.
+// Si la API del sistema de firma no permite CORS para ese dominio,
+// el navegador bloqueará la consulta directa. Por eso este panel
+// intenta conexión directa y, si falla, usa un proxy CORS de apoyo.
+//
+// Producción ideal: reemplazar CORS_PROXIES por un proxy institucional
+// controlado por TI, por ejemplo:
+// const CORS_PROXIES = ['https://tu-dominio-interno/api/firma?url='];
+// =====================================================
+const API_BASE='https://sistemas.mbienes.gob.cl/web/sitios/firma/get_datos_firma.php?id=';
+const CORS_PROXIES=[
+  'https://api.allorigins.win/get?url='
+];
+const IS_GITHUB_PAGES=location.hostname.endsWith('github.io');
+const LS_IDS='panel_firma_ids_v5';
+const REFRESH_SECONDS=300;
+const SPECIAL_SIGNERS=['JAVIER PERÓ OVALLE','JAVIER PERO OVALLE','MARIA CATALINA PAROT DONOSO','MARÍA CATALINA PAROT DONOSO'];
+const SEQUENTIAL_VISADORES=['CRISTIAN PARRAGUEZ LEIVA','STEFAN ANDRÉS GOECKE RUZ','STEFAN ANDRES GOECKE RUZ'];
+let docs=[]; let countdown=REFRESH_SECONDS; let timer=null; let running=false;
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const cleanId=v=>String(v??'').trim();
+const parseIds=raw=>[...new Set(String(raw||'').split(/[^0-9]+/).map(cleanId).filter(x=>/^\d{5}$/.test(x)))];
+const normName=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ').trim();
+const isSpecialSigner=p=>SPECIAL_SIGNERS.some(n=>normName(p.nombre).includes(normName(n)));
+const isSequentialVisador=p=>SEQUENTIAL_VISADORES.some(n=>normName(p.nombre).includes(normName(n)));
+const saveIds=ids=>localStorage.setItem(LS_IDS,JSON.stringify(ids.map(String)));
+const loadIds=()=>{try{return (JSON.parse(localStorage.getItem(LS_IDS))||[]).map(String).filter(x=>/^\d{5}$/.test(x));}catch{return[];}};
+function toast(msg){$('toast').textContent=msg;$('toast').classList.add('on');setTimeout(()=>$('toast').classList.remove('on'),2200)}
+function notice(msg,err=false){$('notice').textContent=msg;$('notice').className='notice on'+(err?' err':'')}
+function hideNotice(){$('notice').className='notice'}
+function openConfig(){$('idsBox').value=loadIds().join('\n');$('config').classList.add('on')}
+function closeConfig(){$('config').classList.remove('on')}
+function normState(s){s=String(s||'').toLowerCase(); if(/rechaz|devuel|observ/.test(s))return'rechazado'; if(/firmad|visad|aprob|complet|enumerad/.test(s))return'ok'; if(/pend|espera|ingres/.test(s))return'pendiente'; return'desconocido'}
+const lbl={visacion:'Visación',firma:'Firma',enumeracion:'Enumeración'};
+function readPeople(d,stage){return (d?.[stage]||[]).map((p,idx)=>({idx,stage,nombre:p.nombre||'Sin nombre',dependencia:p.dependencia||'',estado:normState(p.estado),estadoRaw:p.estado||'',numero:p.numeracion||p.numero||''}));}
+function allPeople(d){return ['visacion','firma','enumeracion'].flatMap(s=>readPeople(d,s));}
+function numbers(d){const out=[]; for(const p of readPeople(d,'enumeracion')) if(p.numero)out.push(String(p.numero)); return [...new Set(out)];}
+function allPriorOk(arr,idx){return arr.slice(0,idx).every(p=>p.estado==='ok')}
+function allVisacionOk(d){const arr=readPeople(d,'visacion'); return arr.length>0 && arr.every(p=>p.estado==='ok')}
+function statusDoc(r){const d=r?.data; if(!r?.ok)return'error'; const ds=normState(d?.documento?.estado||''); if(ds==='rechazado')return'rechazado'; if(allPeople(d).some(p=>p.estado==='rechazado'))return'rechazado'; if(allPeople(d).some(p=>p.estado==='pendiente'||p.estado==='desconocido'))return'pendiente'; return'ok'}
+function isFinalizado(r){
+  if(!r?.ok || !r.data) return false;
+  if(statusDoc(r)==='rechazado') return false;
+  const d=r.data;
+  const firmas=readPeople(d,'firma');
+  const enums=readPeople(d,'enumeracion');
+  const vis=readPeople(d,'visacion');
+  const firmasOk=firmas.length>0 && firmas.every(p=>p.estado==='ok');
+  const enumOk=enums.length===0 || enums.every(p=>p.estado==='ok');
+  const visOk=vis.length===0 || vis.every(p=>p.estado==='ok');
+  return firmasOk && enumOk && visOk;
+}
+function initials(n){return String(n||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?'}
+async function fetchTextWithTimeout(url, timeoutMs=12000){
+  const ctrl=new AbortController();
+  const t=setTimeout(()=>ctrl.abort(),timeoutMs);
+  try{
+    const r=await fetch(url,{signal:ctrl.signal,cache:'no-store'});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return await r.text();
+  } finally { clearTimeout(t); }
+}
+function parseApiPayload(text){
+  let data;
+  try{ data=JSON.parse(text); }
+  catch{ throw new Error('Respuesta no es JSON'); }
+  if(data && typeof data==='object' && typeof data.contents==='string'){
+    try{ data=JSON.parse(data.contents); }
+    catch{ throw new Error('Proxy respondió, pero contents no es JSON'); }
+  }
+  return data;
+}
+async function fetchDoc(id){
+  const clean=cleanId(id);
+  if(!/^\d{5}$/.test(clean))return{id:clean,ok:false,reason:'ID inválido: debe tener 5 dígitos.',data:null};
+
+  const targetUrl=API_BASE+encodeURIComponent(clean);
+  const attempts=[];
+
+  // En GitHub Pages probamos proxy primero para evitar bloqueo CORS inmediato.
+  // Fuera de GitHub, probamos directo primero.
+  if(!IS_GITHUB_PAGES)attempts.push({label:'directo',url:targetUrl,timeout:12000});
+  for(const proxy of CORS_PROXIES)attempts.push({label:'proxy',url:proxy+encodeURIComponent(targetUrl),timeout:15000});
+  if(IS_GITHUB_PAGES)attempts.push({label:'directo',url:targetUrl,timeout:12000});
+
+  const errors=[];
+  for(const a of attempts){
+    try{
+      const text=await fetchTextWithTimeout(a.url,a.timeout);
+      const data=parseApiPayload(text);
+      if(!data)return{id:clean,ok:false,reason:'La API respondió, pero no entregó datos para este ID.',data:null};
+      return{id:clean,ok:true,reason:a.label==='proxy'?'Conectado mediante proxy CORS para GitHub Pages.':'',data};
+    }catch(e){
+      errors.push(a.label+': '+(e.message||e.name||'error'));
+    }
+  }
+  return{id:clean,ok:false,reason:'No se pudo conectar con la API. '+errors.join(' | '),data:null};
+}
+
+function buildAssignments(kind){
+  const q=$('q').value.toLowerCase().trim(); const show=$('show').value; const map={};
+  for(const r of docs){const d=r.data, doc=d?.documento||{}, nums=numbers(d); if(!r.ok)continue;
+    if(kind==='visador'){
+      const vis=readPeople(d,'visacion');
+      for(const p of vis){
+        if(!(p.estado==='pendiente'||p.estado==='desconocido'||p.estado==='rechazado'))continue;
+        const enabled=isSequentialVisador(p)?allPriorOk(vis,p.idx):true;
+        if(show==='habilitados' && !enabled)continue;
+        add(map,p,{id:r.id,doc,person:p,nums,enabled,kind:'visador',reason:enabled?'Habilitado para visar':'Aún no habilitado: falta visación previa'});
+      }
+    }
+    if(kind==='firmante'){
+      const firma=readPeople(d,'firma'); const visOk=allVisacionOk(d);
+      for(const p of firma){
+        if(!isSpecialSigner(p))continue;
+        if(!(p.estado==='pendiente'||p.estado==='desconocido'||p.estado==='rechazado'))continue;
+        const enabled=visOk;
+        if(show==='habilitados' && !enabled)continue;
+        add(map,p,{id:r.id,doc,person:p,nums,enabled,kind:'firmante',reason:enabled?'Habilitado para firma':'Aún no habilitado: faltan visaciones previas'});
+      }
+    }
+  }
+  let arr=Object.values(map);
+  if(q){arr=arr.filter(x=>[x.nombre,x.dependencia,...x.items.flatMap(it=>[it.id,it.doc?.tema,it.person.estadoRaw,it.person.numero,it.reason,...it.nums])].join(' ').toLowerCase().includes(q));}
+  const sort=$('sort').value; arr.sort((a,b)=>sort==='name'?a.nombre.localeCompare(b.nombre):b.items.length-a.items.length||a.nombre.localeCompare(b.nombre)); return arr;
+}
+function add(map,p,item){const key=normName(p.nombre)||'SIN_NOMBRE'; if(!map[key])map[key]={nombre:p.nombre||'Sin nombre',dependencia:p.dependencia||'',items:[]}; map[key].items.push(item)}
+function render(){const vis=buildAssignments('visador'), firm=buildAssignments('firmante'); const rejected=docs.filter(r=>statusDoc(r)==='rechazado').length; const nums=docs.filter(r=>numbers(r.data).length).length; const actions=vis.reduce((a,p)=>a+p.items.length,0)+firm.reduce((a,p)=>a+p.items.length,0); $('kDocs').textContent=docs.length; $('kVisadores').textContent=vis.length; $('kFirmantes').textContent=firm.length; $('kActions').textContent=actions; $('kRejected').textContent=rejected; $('kNumbers').textContent=nums; document.title=(rejected?'⚠ '+rejected+' observado(s) — ':'')+'Panel de Firma'; $('visSub').textContent=vis.length?vis.length+' visador(es) con acciones para revisar.':'Sin visadores habilitados para los filtros actuales.'; $('firmSub').textContent=firm.length?firm.length+' firmante(s) habilitado(s) para firma.':'Sin firmantes habilitados para los filtros actuales.'; $('visCards').innerHTML=vis.length?vis.map(x=>renderPersonCard(x,'visador')).join(''):'<div class="empty">Sin visadores habilitados.</div>'; $('firmCards').innerHTML=firm.length?firm.map(x=>renderPersonCard(x,'firmante')).join(''):'<div class="empty">Sin firmantes habilitados.</div>'; $('docList').innerHTML=docs.length?docs.map(renderDoc).join(''):'<div class="empty">Sin documentos activos. Los finalizados salen automáticamente del panel.</div>';}
+function renderPersonCard(x,kind){const reject=x.items.filter(it=>it.person.estado==='rechazado').length; const cls=kind==='firmante'?'sign':''; return `<article class="person-card"><button class="person-head" type="button" data-toggle-card><div class="avatar ${cls}">${esc(initials(x.nombre))}</div><div><div class="person-name">${esc(x.nombre)}</div><div class="person-sub">${esc(kind==='firmante'?'Firmante':'Visador')}${x.dependencia?' · '+esc(x.dependencia):''}</div></div><div><div class="count" style="color:${kind==='firmante'?'var(--purple)':reject?'var(--red)':'var(--amber)'}">${x.items.length}</div><div class="count-label">pendiente(s)</div><div class="chev">›</div></div></button><div class="person-body"><div class="person-tools"><span class="badge ${reject?'reject':kind==='firmante'?'purple':'pending'}">${reject?reject+' observado(s)':kind==='firmante'?'Pendientes de firma':'Pendientes de visación'}</span><button class="mini" data-copy="${esc(x.items.map(it=>'ID firma '+it.id+(it.nums.length?' · N° '+it.nums.join(', '):'')+' · '+(it.doc?.tema||'Sin título')).join('\n'))}">Copiar cola</button></div><div class="pending-list">${x.items.map(renderTodo).join('')}</div></div></article>`}
+function renderTodo(it){const p=it.person, doc=it.doc||{}; const stateCls=p.estado==='rechazado'?'reject':it.enabled?'pending':'wait'; const title=doc.tema||'Sin título'; const action=it.kind==='firmante'?'Firma':'Visación'; const copy='ID firma '+it.id+(it.nums.length?' · N° '+it.nums.join(', '):''); return `<div class="todo"><div class="todo-title">${esc(title)}</div><div class="todo-meta"><span class="badge blue">ID firma ${esc(it.id)}</span>${it.nums.map(n=>`<span class="badge blue">N° ${esc(n)}</span>`).join('')}<span class="badge ${stateCls}">${esc(action)}: ${esc(p.estadoRaw||p.estado)}</span><span class="badge ${it.enabled?'ok':'wait'}">${esc(it.reason)}</span></div><div class="todo-foot">${esc(p.dependencia||'Sin dependencia')}${doc.fecha_creacion?' · Creado: '+esc(doc.fecha_creacion):''}</div><div style="margin-top:8px"><button class="mini" data-copy="${esc(copy)}">Copiar ID/N°</button></div></div>`}
+function renderDoc(r){const d=r.data, doc=d?.documento||{}; const st=statusDoc(r); const cls=st==='rechazado'?'reject':st==='error'?'reject':st==='ok'?'ok':'pending'; return `<details class="doc"><summary><div class="doc-title">${esc(doc.tema||'Sin título / sin datos')}</div><div class="todo-meta"><span class="badge blue">ID firma ${esc(r.id)}</span>${numbers(d).map(n=>`<span class="badge blue">N° ${esc(n)}</span>`).join('')}<span class="badge ${cls}">${esc(st==='ok'?'Completo':st==='pendiente'?'Pendiente':st==='rechazado'?'Rechazado/observado':'Error API')}</span></div>${!r.ok?`<p class="small" style="color:var(--red);font-weight:850">${esc(r.reason)}</p>`:''}</summary><div class="doc-grid">${['visacion','firma','enumeracion'].map(s=>renderStage(d,s)).join('')}</div></details>`}
+function renderStage(d,s){const arr=readPeople(d,s); return `<section class="stage"><h3>${esc(lbl[s])}</h3>${arr.length?arr.map(p=>`<div class="line"><b>${esc(p.nombre||'Sin nombre')}</b><p>${esc(p.dependencia||'Sin dependencia')}</p><div class="todo-meta"><span class="badge ${p.estado==='rechazado'?'reject':p.estado==='ok'?'ok':'pending'}">${esc(p.estadoRaw||p.estado)}</span>${p.numero?`<span class="badge blue">N° ${esc(p.numero)}</span>`:''}</div></div>`).join(''):'<div class="small">Sin registros</div>'}</section>`}
+async function update(){
+  const ids=loadIds();
+  if(!ids.length){docs=[];render();openConfig();toast('Carga IDs para iniciar');return;}
+  if(running)return;
+  running=true;
+  $('refreshBtn').disabled=true;
+  $('refreshBtn').textContent='Consultando...';
+  const raw=[];
+  docs=[];
+  notice('Consultando API...');
+  for(const id of ids){
+    const item=await fetchDoc(id);
+    raw.push(item);
+    docs=raw.filter(r=>!isFinalizado(r));
+    render();
+  }
+  $('refreshBtn').disabled=false;
+  $('refreshBtn').textContent='Actualizar';
+  running=false;
+  countdown=REFRESH_SECONDS;
+  const errors=docs.filter(r=>!r.ok).length;
+  const finalizados=raw.filter(isFinalizado).length;
+  if(errors)notice(errors+' documento(s) con error de conexión o sin datos. '+(finalizados?finalizados+' finalizado(s) fuera del panel.':''),true);
+  else if(finalizados)notice(finalizados+' documento(s) finalizado(s) fueron omitidos del panel operativo.');
+  else hideNotice();
+  $('lastBox').textContent=new Date().toLocaleString('es-CL')+' · '+docs.length+' documento(s) activo(s)';
+  render();
+}
+function rowsHabilitados(){
+  const rows=[];
+  for(const kind of ['visador','firmante']){
+    for(const x of buildAssignments(kind)){
+      for(const it of x.items){
+        rows.push({
+          Persona:x.nombre,
+          Rol:kind==='firmante'?'Firmante':'Visador',
+          Dependencia:x.dependencia||'',
+          Accion:lbl[it.person.stage]||it.person.stage,
+          Habilitado:it.enabled?'Sí':'No',
+          Motivo:it.reason||'',
+          Estado:it.person.estadoRaw||it.person.estado||'',
+          ID_Firma:String(it.id),
+          Numeracion:it.nums.join('; '),
+          Documento:it.doc?.tema||'',
+          Fecha_Creacion:it.doc?.fecha_creacion||''
+        });
+      }
+    }
+  }
+  return rows;
+}
+function rowsDetalleDocumentos(){
+  const rows=[];
+  for(const r of docs){
+    const d=r.data, doc=d?.documento||{};
+    if(!r.ok){
+      rows.push({ID_Firma:String(r.id), Documento:'', Etapa:'Error API', Persona:'', Dependencia:'', Estado:r.reason||'Error', Numeracion:'', Estado_Documento:'Error'});
+      continue;
+    }
+    for(const etapa of ['visacion','firma','enumeracion']){
+      const personas=readPeople(d,etapa);
+      if(!personas.length){
+        rows.push({ID_Firma:String(r.id), Codigo:doc.codigo||'', Documento:doc.tema||'', Fecha_Creacion:doc.fecha_creacion||'', Etapa:lbl[etapa], Persona:'Sin registros', Dependencia:'', Estado:'', Numeracion:'', Estado_Documento:statusDoc(r)});
+      } else {
+        for(const p of personas){
+          rows.push({
+            ID_Firma:String(r.id),
+            Codigo:doc.codigo||'',
+            Documento:doc.tema||'',
+            Fecha_Creacion:doc.fecha_creacion||'',
+            Etapa:lbl[etapa],
+            Persona:p.nombre||'',
+            Dependencia:p.dependencia||'',
+            Estado:p.estadoRaw||p.estado||'',
+            Numeracion:p.numero||'',
+            Estado_Documento:statusDoc(r)
+          });
+        }
+      }
+    }
+  }
+  return rows;
+}
+function rowsResumen(){
+  const vis=buildAssignments('visador'), firm=buildAssignments('firmante');
+  return [
+    {Indicador:'Documentos consultados', Valor:docs.length},
+    {Indicador:'Visadores habilitados', Valor:vis.length},
+    {Indicador:'Firmantes habilitados', Valor:firm.length},
+    {Indicador:'Acciones habilitadas', Valor:vis.reduce((a,p)=>a+p.items.length,0)+firm.reduce((a,p)=>a+p.items.length,0)},
+    {Indicador:'Rechazos / observaciones', Valor:docs.filter(r=>statusDoc(r)==='rechazado').length},
+    {Indicador:'Documentos con numeración', Valor:docs.filter(r=>numbers(r.data).length).length},
+    {Indicador:'Fecha exportación', Valor:new Date().toLocaleString('es-CL')}
+  ];
+}
+function autosize(ws, rows){
+  const keys=[...new Set(rows.flatMap(r=>Object.keys(r)))];
+  ws['!cols']=keys.map(k=>({wch:Math.min(Math.max(k.length+2, ...rows.map(r=>String(r[k]??'').length+2), 10), 70)}));
+}
+function exportExcel(){
+  if(!docs.length){toast('Sin datos para exportar');return;}
+  if(typeof XLSX==='undefined'){
+    toast('No se cargó la librería Excel. Revisa conexión o instala SheetJS en la intranet.');
+    return;
+  }
+  const resumen=rowsResumen();
+  const habilitados=rowsHabilitados();
+  const detalle=rowsDetalleDocumentos();
+  const errores=docs.filter(r=>!r.ok).map(r=>({ID_Firma:String(r.id), Error:r.reason||'Error no especificado'}));
+  const wb=XLSX.utils.book_new();
+  const sheets=[
+    ['Resumen', resumen],
+    ['Habilitados', habilitados.length?habilitados:[{Mensaje:'Sin acciones habilitadas con los filtros actuales'}]],
+    ['Detalle_documentos', detalle.length?detalle:[{Mensaje:'Sin detalle'}]],
+    ['Errores_API', errores.length?errores:[{Mensaje:'Sin errores'}]]
+  ];
+  for(const [name, rows] of sheets){
+    const ws=XLSX.utils.json_to_sheet(rows);
+    autosize(ws, rows);
+    XLSX.utils.book_append_sheet(wb, ws, name);
+  }
+  XLSX.writeFile(wb,'panel_firma_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  toast('Excel generado');
+}
+function copyText(text){navigator.clipboard?.writeText(String(text)).then(()=>toast('Copiado')).catch(()=>toast('No se pudo copiar'))}
+function tick(){countdown--; if(countdown<=0){countdown=REFRESH_SECONDS; update()} const m=String(Math.floor(countdown/60)); const s=String(countdown%60).padStart(2,'0'); $('autoBox').textContent='Auto: '+m+':'+s}
+$('configBtn').onclick=openConfig; $('closeBtn').onclick=closeConfig; $('refreshBtn').onclick=update; $('exportBtn').onclick=exportExcel; $('saveBtn').onclick=()=>{const ids=parseIds($('idsBox').value); if(!ids.length){toast('No hay IDs válidos');return} saveIds(ids); closeConfig(); update()}; $('clearBtn').onclick=()=>{localStorage.removeItem(LS_IDS);docs=[];render();openConfig();toast('Parámetros limpiados')}; ['q','show','sort'].forEach(id=>$(id).addEventListener('input',render)); $('clearFiltersBtn').onclick=()=>{$('q').value='';$('show').value='habilitados';$('sort').value='count';render()}; document.addEventListener('click',e=>{const card=e.target.closest('[data-toggle-card]'); if(card)card.closest('.person-card').classList.toggle('open'); const btn=e.target.closest('[data-copy]'); if(btn)copyText(btn.getAttribute('data-copy'))});
+render(); timer=setInterval(tick,1000); if(!loadIds().length)openConfig(); else update();
+</script>
+</body>
+</html>
