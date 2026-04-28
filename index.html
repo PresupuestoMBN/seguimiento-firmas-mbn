@@ -35,12 +35,12 @@
 <main class="wrap">
   <div class="notice" id="notice"></div>
   <section class="config" id="config">
-    <h2>Parametrización</h2><p class="small">Ingresa los números de expediente del sistema de firma. Se tratan siempre como texto, por lo que se conservan ceros iniciales.</p>
+    <h2>Parametrización</h2><p class="small">El panel viene con una lista base de documentos para que el enlace abra listo. Si necesitas ajustar la lista, puedes guardar IDs locales en este navegador. Se tratan siempre como texto, por lo que se conservan ceros iniciales.</p>
     <div class="config-grid">
-      <div><label class="small"><b>IDs del sistema de firma</b></label><textarea id="idsBox" placeholder="59736&#10;59737&#10;01234"></textarea></div>
-      <div class="hint"><b>Uso rápido</b><br>Ingresa uno o varios IDs del sistema de firma, separados por salto de línea, coma o espacio.<br><br>El panel mostrará solo lo operativo: quién debe visar o firmar, el ID exacto del sistema de firma, el nombre del documento y su estado actual.<br><br>No se muestran RUTs en pantalla.<br><br><b>Publicación en GitHub:</b> el panel usa conexión directa y fallback CORS. Si la API bloquea el dominio github.io, se conectará mediante proxy de apoyo.</div>
+      <div><label class="small"><b>IDs del sistema de firma</b></label><textarea id="idsBox" placeholder="59720&#10;59703&#10;59688&#10;59514&#10;59499&#10;59422&#10;57551&#10;57542&#10;59983&#10;59893"></textarea></div>
+      <div class="hint"><b>Uso rápido</b><br><b>Opción 1:</b> usar la lista base incluida en el código; todos ven los mismos documentos al abrir el enlace.<br><b>Opción 2:</b> guardar una lista local desde esta pantalla; solo cambia en este navegador.<br><br>Ingresa uno o varios IDs del sistema de firma, separados por salto de línea, coma o espacio.<br><br>El panel mostrará solo lo operativo: quién debe visar o firmar, el ID exacto del sistema de firma, el nombre del documento y su estado actual.<br><br>No se muestran RUTs en pantalla.<br><br><b>Publicación en GitHub:</b> el panel usa conexión directa y fallback CORS. Si la API bloquea el dominio github.io, se conectará mediante proxy de apoyo.</div>
     </div>
-    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn primary" id="saveBtn">Guardar y consultar</button><button class="btn" id="closeBtn">Cerrar</button><button class="btn danger" id="clearBtn">Limpiar parámetros</button></div>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn primary" id="saveBtn">Guardar y consultar</button><button class="btn" id="closeBtn">Cerrar</button><button class="btn danger" id="clearBtn">Restaurar lista base</button></div>
   </section>
 
   <section class="kpis">
@@ -96,6 +96,9 @@ const CORS_PROXIES=[
 ];
 const IS_GITHUB_PAGES=location.hostname.endsWith('github.io');
 const LS_IDS='panel_firma_ids_v5';
+// IDs preconfigurados para que cualquier persona que abra el enlace vea el panel listo.
+// Si se guardan IDs desde "Parametrizar", esos reemplazan estos valores solo en ese navegador.
+const DEFAULT_IDS=['59720','59703','59688','59514','59499','59422','57551','57542','59983','59893','60145'];
 const REFRESH_SECONDS=300;
 const SPECIAL_SIGNERS=['JAVIER PERÓ OVALLE','JAVIER PERO OVALLE','MARIA CATALINA PAROT DONOSO','MARÍA CATALINA PAROT DONOSO'];
 const SEQUENTIAL_VISADORES=['CRISTIAN PARRAGUEZ LEIVA','STEFAN ANDRÉS GOECKE RUZ','STEFAN ANDRES GOECKE RUZ'];
@@ -108,7 +111,7 @@ const normName=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').
 const isSpecialSigner=p=>SPECIAL_SIGNERS.some(n=>normName(p.nombre).includes(normName(n)));
 const isSequentialVisador=p=>SEQUENTIAL_VISADORES.some(n=>normName(p.nombre).includes(normName(n)));
 const saveIds=ids=>localStorage.setItem(LS_IDS,JSON.stringify(ids.map(String)));
-const loadIds=()=>{try{return (JSON.parse(localStorage.getItem(LS_IDS))||[]).map(String).filter(x=>/^\d{5}$/.test(x));}catch{return[];}};
+const loadIds=()=>{try{const stored=localStorage.getItem(LS_IDS);if(stored){const ids=(JSON.parse(stored)||[]).map(String).filter(x=>/^\d{5}$/.test(x));if(ids.length)return ids;}}catch(e){}return DEFAULT_IDS.map(String).filter(x=>/^\d{5}$/.test(x));};
 function toast(msg){$('toast').textContent=msg;$('toast').classList.add('on');setTimeout(()=>$('toast').classList.remove('on'),2200)}
 function notice(msg,err=false){$('notice').textContent=msg;$('notice').className='notice on'+(err?' err':'')}
 function hideNotice(){$('notice').className='notice'}
@@ -340,7 +343,7 @@ function exportExcel(){
 }
 function copyText(text){navigator.clipboard?.writeText(String(text)).then(()=>toast('Copiado')).catch(()=>toast('No se pudo copiar'))}
 function tick(){countdown--; if(countdown<=0){countdown=REFRESH_SECONDS; update()} const m=String(Math.floor(countdown/60)); const s=String(countdown%60).padStart(2,'0'); $('autoBox').textContent='Auto: '+m+':'+s}
-$('configBtn').onclick=openConfig; $('closeBtn').onclick=closeConfig; $('refreshBtn').onclick=update; $('exportBtn').onclick=exportExcel; $('saveBtn').onclick=()=>{const ids=parseIds($('idsBox').value); if(!ids.length){toast('No hay IDs válidos');return} saveIds(ids); closeConfig(); update()}; $('clearBtn').onclick=()=>{localStorage.removeItem(LS_IDS);docs=[];render();openConfig();toast('Parámetros limpiados')}; ['q','show','sort'].forEach(id=>$(id).addEventListener('input',render)); $('clearFiltersBtn').onclick=()=>{$('q').value='';$('show').value='habilitados';$('sort').value='count';render()}; document.addEventListener('click',e=>{const card=e.target.closest('[data-toggle-card]'); if(card)card.closest('.person-card').classList.toggle('open'); const btn=e.target.closest('[data-copy]'); if(btn)copyText(btn.getAttribute('data-copy'))});
+$('configBtn').onclick=openConfig; $('closeBtn').onclick=closeConfig; $('refreshBtn').onclick=update; $('exportBtn').onclick=exportExcel; $('saveBtn').onclick=()=>{const ids=parseIds($('idsBox').value); if(!ids.length){toast('No hay IDs válidos');return} saveIds(ids); closeConfig(); update()}; $('clearBtn').onclick=()=>{localStorage.removeItem(LS_IDS);$('idsBox').value=DEFAULT_IDS.join('\n');toast('Se restauró la lista base');update()}; ['q','show','sort'].forEach(id=>$(id).addEventListener('input',render)); $('clearFiltersBtn').onclick=()=>{$('q').value='';$('show').value='habilitados';$('sort').value='count';render()}; document.addEventListener('click',e=>{const card=e.target.closest('[data-toggle-card]'); if(card)card.closest('.person-card').classList.toggle('open'); const btn=e.target.closest('[data-copy]'); if(btn)copyText(btn.getAttribute('data-copy'))});
 render(); timer=setInterval(tick,1000); if(!loadIds().length)openConfig(); else update();
 </script>
 </body>
