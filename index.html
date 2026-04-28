@@ -227,24 +227,29 @@ function buildAssignments(kind){
       const addedForDoc=new Set();
 
       // Firmantes que vienen explícitamente en la etapa de firma.
+      // Regla corregida: Enrique Mercadal también se considera firmante,
+      // aunque tenga dualidad en el flujo. Se habilita si todas las visaciones
+      // previas están OK y, si hay firmantes anteriores, estos también están OK.
       for(const p of firma){
-        if(!isSpecialSigner(p))continue;
+        const esFirmanteDefinido=isSpecialSigner(p)||isDualSigner(p);
+        if(!esFirmanteDefinido)continue;
         if(!(p.estado==='pendiente'||p.estado==='desconocido'||p.estado==='rechazado'))continue;
-        const enabled=visOk;
+        const enabled=visOk && allPriorOk(firma,p.idx);
         if(show==='habilitados' && !enabled)continue;
         addedForDoc.add(normName(p.nombre));
         add(map,p,{id:r.id,doc,person:p,nums,enabled,kind:'firmante',reason:enabled?'Habilitado para firma':'Aún no habilitado: faltan visaciones previas'});
       }
 
-      // Caso especial: Enrique Mercadal tiene dualidad. Si aparece en la cadena de visación
-      // y todos los anteriores ya visaron, también debe mostrarse como pendiente de firma.
+      // Caso especial: Enrique Mercadal con dualidad.
+      // Si aparece en la cadena de visación y todos los visadores anteriores ya visaron,
+      // debe mostrarse como pendiente de firma aunque la API no lo entregue en la etapa firma.
       for(const p of vis){
         if(!isDualSigner(p))continue;
         if(addedForDoc.has(normName(p.nombre)))continue;
-        if(!(p.estado==='pendiente'||p.estado==='desconocido'||p.estado==='rechazado'))continue;
+        if(p.estado==='rechazado')continue;
         const enabled=allPriorOk(vis,p.idx);
         if(show==='habilitados' && !enabled)continue;
-        const firmanteVirtual={...p,stage:'firma'};
+        const firmanteVirtual={...p,stage:'firma',estado:'pendiente',estadoRaw:'Pendiente de firma'};
         add(map,firmanteVirtual,{id:r.id,doc,person:firmanteVirtual,nums,enabled,kind:'firmante',reason:enabled?'Habilitado para firma':'Aún no habilitado: faltan visaciones previas'});
       }
     }
