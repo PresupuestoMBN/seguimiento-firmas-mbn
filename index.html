@@ -37,7 +37,7 @@
   <section class="config" id="config">
     <h2>Parametrización</h2><p class="small">El panel viene con una lista base de documentos para que el enlace abra listo. Si necesitas ajustar la lista, puedes guardar IDs locales en este navegador. Se tratan siempre como texto, por lo que se conservan ceros iniciales.</p>
     <div class="config-grid">
-      <div><label class="small"><b>IDs del sistema de firma</b></label><textarea id="idsBox" placeholder="59720&#10;59703&#10;59688&#10;59514&#10;59499&#10;59422&#10;57551&#10;57542&#10;59983&#10;59893"></textarea></div>
+      <div><label class="small"><b>IDs del sistema de firma</b></label><textarea id="idsBox" placeholder="60282&#10;59720&#10;59703&#10;59688&#10;59514&#10;59499&#10;59422&#10;57551&#10;57542&#10;59983&#10;59893&#10;60303"></textarea></div>
       <div class="hint"><b>Uso rápido</b><br><b>Opción 1:</b> usar la lista base incluida en el código; todos ven los mismos documentos al abrir el enlace.<br><b>Opción 2:</b> guardar una lista local desde esta pantalla; solo cambia en este navegador.<br><br>Ingresa uno o varios IDs del sistema de firma, separados por salto de línea, coma o espacio.<br><br>El panel mostrará solo lo operativo: quién debe visar o firmar, el ID exacto del sistema de firma, el nombre del documento y su estado actual.<br><br>No se muestran RUTs en pantalla.<br><br><b>Publicación en GitHub:</b> el panel usa conexión directa y fallback CORS. Si la API bloquea el dominio github.io, se conectará mediante proxy de apoyo.</div>
     </div>
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn primary" id="saveBtn">Guardar y consultar</button><button class="btn" id="closeBtn">Cerrar</button><button class="btn danger" id="clearBtn">Restaurar lista base</button></div>
@@ -81,8 +81,23 @@
 
 const API_BASE='https://sistemas.mbienes.gob.cl/web/sitios/firma/get_datos_firma.php?id=';
 const CORS_PROXIES=['https://api.allorigins.win/get?url='];
-const LS_IDS='panel_firma_ids_v5';
-const DEFAULT_IDS=['59720','59703','59688','59514','59499','59422','57551','57542','59983','59893','60145'];
+const LS_IDS='panel_firma_ids_v7';
+// Lista base publicada: se usa al abrir el panel por primera vez.
+// Se cambió LS_IDS a v7 para evitar que un localStorage antiguo oculte 60303.
+const DEFAULT_IDS=[
+  '60282',
+  '59720',
+  '59703',
+  '59688',
+  '59514',
+  '59499',
+  '59422',
+  '57551',
+  '57542',
+  '59983',
+  '59893',
+  '60303'
+];
 const REFRESH_SECONDS=300;
 
 // Firmantes especiales que pueden aparecer en la etapa de firma
@@ -210,15 +225,17 @@ function buildAssignments(kind){
         if(isLastVisador(p)){
           // ✅ Jefes de gabinete (Parraguez, Goecke): se habilitan solo cuando
           // TODOS los visadores que NO son jefes de gabinete ya han visado.
-          // Se ignora el orden del array de la API — lo que importa es que
-          // todos los "no-jefes" estén ok, independiente de su posición.
+          // Esto mantiene la regla especial aunque la API los devuelva antes o después.
           enabled=vis
             .filter(v=>!isLastVisador(v))
             .every(v=>v.estado==='ok');
         } else {
-          // Visadores normales: orden secuencial estricto
-          // (se habilitan cuando todos los anteriores a ellos en el array ya visaron)
-          enabled=allPriorOk(vis,p.idx);
+          // ✅ Visadores normales, incluidos los nuevos visadores que vengan en
+          // documentos nuevos como 60303: se muestran todos mientras estén pendientes.
+          // No se filtran por nombre ni por una lista fija; vienen directamente de la API.
+          // La única excepción son Parraguez/Goecke, que siguen bloqueados hasta que
+          // TODOS los demás visadores del documento estén OK.
+          enabled=true;
         }
 
         if(show==='habilitados' && !enabled) continue;
