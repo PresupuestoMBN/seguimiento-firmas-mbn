@@ -1,350 +1,402 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Panel de Firma</title>
-<style>
-:root{
-  --bg:#f4f6f8;--surface:#fff;--soft:#f9fafb;--border:#dde3ea;--text:#111827;--muted:#64748b;--faint:#94a3b8;
-  --blue:#1d4ed8;--blue-bg:#eff6ff;--blue-b:#bfdbfe;--amber:#b45309;--amber-bg:#fffbeb;--amber-b:#fde68a;
-  --red:#b91c1c;--red-bg:#fef2f2;--red-b:#fecaca;--green:#047857;--green-bg:#ecfdf5;--green-b:#bbf7d0;
-  --purple:#6d28d9;--purple-bg:#f5f3ff;--purple-b:#ddd6fe;--shadow:0 1px 3px rgba(15,23,42,.08),0 12px 34px rgba(15,23,42,.06);
-  font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
-}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-size:14px;line-height:1.45}button,input,textarea,select{font:inherit}button{cursor:pointer}
-.top{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:12px 22px;display:flex;justify-content:space-between;align-items:center;gap:12px;box-shadow:0 1px 8px rgba(15,23,42,.04)}
-.brand{display:flex;align-items:center;gap:11px}.logo{width:38px;height:38px;border-radius:12px;background:var(--blue);color:white;display:grid;place-items:center;font-weight:950}.brand h1{margin:0;font-size:16px}.brand p{margin:1px 0 0;color:var(--muted);font-size:12px}.top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.statusbar{font-size:12px;color:var(--muted);white-space:nowrap}
-.btn{border:1px solid var(--border);background:var(--surface);border-radius:10px;padding:8px 12px;font-weight:850;color:var(--text)}.btn:hover{background:var(--soft)}.btn.primary{background:var(--blue);border-color:var(--blue);color:white}.btn.danger{background:var(--red-bg);border-color:var(--red-b);color:var(--red)}.btn:disabled{opacity:.55;cursor:not-allowed}.mini{padding:5px 9px;border-radius:8px;border:1px solid var(--border);background:white;font-size:12px;font-weight:850}.mini:hover{background:var(--soft)}
-.wrap{max-width:1260px;margin:0 auto;padding:18px}.notice{display:none;margin-bottom:14px;border:1px solid var(--amber-b);background:var(--amber-bg);color:var(--amber);padding:10px 12px;border-radius:12px;font-size:12px;font-weight:750}.notice.on{display:block}.notice.err{border-color:var(--red-b);background:var(--red-bg);color:var(--red)}
-.config{display:none;background:var(--surface);border:2px solid var(--blue-b);border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:var(--shadow)}.config.on{display:block}.config h2{font-size:16px;margin:0 0 4px}.small{font-size:12px;color:var(--muted)}textarea,input,select{width:100%;border:1px solid var(--border);border-radius:10px;background:white;color:var(--text);padding:9px 10px}textarea{min-height:126px;resize:vertical;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.config-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}.hint{background:var(--soft);border:1px dashed var(--border);border-radius:12px;padding:10px;color:var(--muted);font-size:12px}
-.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px}.kpi{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:var(--shadow)}.kpi b{display:block;font-size:27px;letter-spacing:-.04em}.kpi span{font-size:12px;color:var(--muted)}.kpi.red b{color:var(--red)}.kpi.amber b{color:var(--amber)}.kpi.green b{color:var(--green)}.kpi.blue b{color:var(--blue)}.kpi.purple b{color:var(--purple)}
-.filters{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px;margin-bottom:14px;display:grid;grid-template-columns:1.4fr .75fr .75fr auto;gap:10px;align-items:end;box-shadow:var(--shadow)}.filters label{display:block;font-size:11px;font-weight:950;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.03em}
-.section-title{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:18px 0 10px}.section-title h2{font-size:16px;margin:0}.section-title p{margin:2px 0 0;color:var(--muted);font-size:12px}.section-title .right{font-size:12px;color:var(--muted);white-space:nowrap}
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(380px,100%),1fr));gap:12px}.person-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}.person-head{width:100%;border:0;background:transparent;text-align:left;padding:14px 15px;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center}.person-head:hover{background:var(--soft)}.avatar{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--blue-bg);color:var(--blue);font-weight:950;border:2px solid var(--blue-b)}.avatar.sign{background:var(--purple-bg);color:var(--purple);border-color:var(--purple-b)}.person-name{font-weight:950;font-size:14px;line-height:1.25;text-transform:uppercase}.person-sub{color:var(--muted);font-size:12px;margin-top:2px}.count{font-size:26px;font-weight:950;letter-spacing:-.04em;text-align:right}.count-label{font-size:10px;color:var(--muted);text-align:right;text-transform:uppercase}.chev{color:var(--faint);font-weight:950;margin-left:8px}.person-card.open .chev{transform:rotate(90deg)}.person-body{display:none;border-top:1px solid var(--border);padding:10px 15px 14px}.person-card.open .person-body{display:block}.person-tools{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px}.badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:850;border:1px solid var(--border);background:#f3f4f6;white-space:nowrap}.badge.blue{background:var(--blue-bg);color:var(--blue);border-color:var(--blue-b)}.badge.purple{background:var(--purple-bg);color:var(--purple);border-color:var(--purple-b)}.badge.pending{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-b)}.badge.reject{background:var(--red-bg);color:var(--red);border-color:var(--red-b)}.badge.ok{background:var(--green-bg);color:var(--green);border-color:var(--green-b)}.badge.wait{background:#f1f5f9;color:#64748b;border-color:#cbd5e1}
-.pending-list{display:flex;flex-direction:column;gap:8px}.todo{border:1px solid var(--border);background:var(--soft);border-radius:14px;padding:10px}.todo-title{font-weight:900;font-size:12px;margin-bottom:6px;line-height:1.3}.todo-meta{display:flex;gap:5px;flex-wrap:wrap}.todo-foot{margin-top:7px;color:var(--muted);font-size:11px}.empty{background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:28px;text-align:center;color:var(--muted)}
-.docs{margin-top:16px}.doc{background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);margin-bottom:10px;overflow:hidden}.doc summary{cursor:pointer;list-style:none;padding:13px 14px}.doc summary::-webkit-details-marker{display:none}.doc-title{font-weight:950;margin-bottom:6px}.doc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 14px 14px}.stage{border:1px solid var(--border);border-radius:12px;padding:10px;background:var(--soft)}.stage h3{font-size:12px;margin:0 0 8px;text-transform:uppercase;color:var(--muted);letter-spacing:.04em}.line{padding:6px 0;border-top:1px solid var(--border)}.line:first-of-type{border-top:0}.line b{font-size:12px}.line p{margin:2px 0 0;color:var(--muted);font-size:11px}.toast{position:fixed;right:18px;bottom:18px;background:#111827;color:white;padding:10px 14px;border-radius:12px;box-shadow:var(--shadow);opacity:0;transform:translateY(10px);transition:.2s;z-index:50}.toast.on{opacity:1;transform:translateY(0)}
-@media(max-width:1000px){.kpis{grid-template-columns:repeat(3,1fr)}.doc-grid{grid-template-columns:1fr}.filters,.config-grid{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}.top-actions{width:100%}.top-actions .btn{flex:1}.wrap{padding:14px}}@media(max-width:560px){.kpis{grid-template-columns:1fr 1fr}.brand h1{font-size:14px}.cards{grid-template-columns:1fr}.person-head{grid-template-columns:auto 1fr}.person-head>div:last-child{grid-column:2}}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de Seguimiento de Firmas</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <style>
+    :root{
+      --bg:#f3f5f8;--card:#fff;--text:#172033;--muted:#667085;--line:#dfe4ea;
+      --primary:#155eef;--primary-soft:#eef4ff;--ok:#079455;--ok-soft:#ecfdf3;
+      --warn:#dc6803;--warn-soft:#fffaeb;--bad:#d92d20;--bad-soft:#fef3f2;
+      --info:#444ce7;--info-soft:#eef4ff;--shadow:0 8px 24px rgba(16,24,40,.08);
+      --radius:16px;
+    }
+    [data-theme="dark"]{
+      --bg:#0f172a;--card:#111827;--text:#f8fafc;--muted:#94a3b8;--line:#253044;
+      --primary:#60a5fa;--primary-soft:#122642;--ok:#34d399;--ok-soft:#092d21;
+      --warn:#fbbf24;--warn-soft:#2b2108;--bad:#f87171;--bad-soft:#351313;
+      --info:#93c5fd;--info-soft:#132946;--shadow:0 8px 24px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.45}
+    button,input,textarea,select{font:inherit} button{cursor:pointer;border:0;background:none;color:inherit}
+    .top{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.84);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+    [data-theme="dark"] .top{background:rgba(17,24,39,.86)}
+    .top-inner{max-width:1180px;margin:auto;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:14px}
+    .brand h1{margin:0;font-size:18px;letter-spacing:-.02em}.brand p{margin:2px 0 0;color:var(--muted);font-size:12px}
+    .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.btn{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:9px 12px;font-weight:650;font-size:12px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+    .btn.primary{background:var(--primary);color:white;border-color:var(--primary)}.btn:hover{filter:brightness(.98)}
+    .wrap{max-width:1180px;margin:auto;padding:18px}.status{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;color:var(--muted);font-size:12px}
+    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:5px 10px;background:var(--card);font-size:12px;color:var(--muted)}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}.dot.ok{background:var(--ok)}.dot.warn{background:var(--warn)}.dot.bad{background:var(--bad)}
+    .progress{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin-bottom:18px}.bar{height:100%;background:var(--primary);width:0%;transition:width .2s}
+    .kpis{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:12px;margin-bottom:16px}.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px}.kpi b{font-size:26px;display:block;letter-spacing:-.04em}.kpi span{font-size:12px;color:var(--muted)}
+    .controls{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:10px;margin:14px 0}.control{width:100%;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:12px;padding:10px 12px}
+    .layout{display:grid;grid-template-columns:1fr 360px;gap:14px}.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}.panel-head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:center}.panel-title{font-size:14px;font-weight:800}.panel-sub{font-size:12px;color:var(--muted);margin-top:2px}
+    .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;padding:14px}.person{border:1px solid var(--line);border-radius:16px;background:linear-gradient(180deg,var(--card),rgba(255,255,255,.96));overflow:hidden}.person-head{padding:13px;display:flex;align-items:center;justify-content:space-between;gap:10px}.person-main{min-width:0}.person-name{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.person-role{font-size:12px;color:var(--muted)}.count{font-size:24px;font-weight:900}.person-body{display:none;border-top:1px solid var(--line);padding:8px 13px 12px}.person.open .person-body{display:block}.task{padding:9px 0;border-bottom:1px solid var(--line)}.task:last-child{border-bottom:0}.task-title{font-size:12px;font-weight:750;line-height:1.3}.task-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.tag{border-radius:999px;padding:3px 8px;font-size:11px;font-weight:750;background:var(--primary-soft);color:var(--primary)}.tag.warn{background:var(--warn-soft);color:var(--warn)}.tag.bad{background:var(--bad-soft);color:var(--bad)}.tag.ok{background:var(--ok-soft);color:var(--ok)}
+    .docs{padding:12px}.doc{border:1px solid var(--line);border-radius:16px;margin-bottom:10px;overflow:hidden;background:var(--card)}.doc-head{padding:12px 14px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.doc-title{font-weight:800;font-size:13px}.doc-meta{font-size:12px;color:var(--muted);margin-top:4px}.doc-body{border-top:1px solid var(--line);padding:10px 14px;display:grid;gap:8px}.stage{display:flex;justify-content:space-between;gap:8px;align-items:center}.stage span{font-size:12px;color:var(--muted)}
+    .side{display:grid;gap:14px;align-content:start}.rank{padding:12px}.rank-row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:9px 0}.rank-row:last-child{border-bottom:0}.rank-name{font-weight:750;font-size:12px}.rank-meta{color:var(--muted);font-size:11px}.empty{padding:28px;text-align:center;color:var(--muted)}
+    .modal{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:18px}.modal.on{display:flex}.dialog{background:var(--card);color:var(--text);border-radius:18px;box-shadow:var(--shadow);width:min(760px,100%);max-height:90vh;overflow:auto;border:1px solid var(--line)}.dialog-head{padding:16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px}.dialog-body{padding:16px}.field{margin-bottom:14px}.field label{font-size:12px;font-weight:800;display:block;margin-bottom:6px}.field textarea{width:100%;min-height:110px;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--bg);color:var(--text);font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.hint{font-size:12px;color:var(--muted)}
+    @media(max-width:900px){.layout{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.controls{grid-template-columns:1fr}.top-inner{align-items:flex-start;flex-direction:column}.toolbar{width:100%}.btn{flex:1}.side{grid-template-columns:1fr}}
+  </style>
 </head>
 <body>
-<header class="top">
-  <div class="brand"><div class="logo">F</div><div><h1>Panel de seguimiento de firma</h1><p>Visadores y firmantes habilitados · seguimiento ejecutivo de pendientes</p></div></div>
-  <div class="top-actions"><span class="statusbar" id="autoBox">Auto: 5:00</span><button class="btn" id="configBtn">Parametrizar</button><button class="btn primary" id="refreshBtn">Actualizar</button><button class="btn" id="exportBtn">Exportar Excel</button></div>
-</header>
-<main class="wrap">
-  <div class="notice" id="notice"></div>
-  <section class="config" id="config">
-    <h2>Parametrización</h2><p class="small">El panel viene con una lista base de documentos para que el enlace abra listo. Si necesitas ajustar la lista, puedes guardar IDs locales en este navegador. Se tratan siempre como texto, por lo que se conservan ceros iniciales.</p>
-    <div class="config-grid">
-      <div><label class="small"><b>IDs del sistema de firma</b></label><textarea id="idsBox" placeholder="59720&#10;59703&#10;59688&#10;59514&#10;59499&#10;59422&#10;57551&#10;57542&#10;59983&#10;59893"></textarea></div>
-      <div class="hint"><b>Uso rápido</b><br><b>Opción 1:</b> usar la lista base incluida en el código; todos ven los mismos documentos al abrir el enlace.<br><b>Opción 2:</b> guardar una lista local desde esta pantalla; solo cambia en este navegador.<br><br>Ingresa uno o varios IDs del sistema de firma, separados por salto de línea, coma o espacio.<br><br>
+  <header class="top">
+    <div class="top-inner">
+      <div class="brand">
+        <h1>Panel de Seguimiento de Visación y Firma</h1>
+        <p>Seguimiento operativo de documentos habilitados, pendientes y observados</p>
+      </div>
+      <div class="toolbar">
+        <button class="btn" onclick="openConfig()">Parametrizar</button>
+        <button class="btn" onclick="clearLocalConfig()">Usar lista oficial</button>
+        <button class="btn" onclick="toggleTheme()">Modo oscuro</button>
+        <button class="btn" onclick="exportExcel()">Exportar Excel</button>
+        <button class="btn primary" id="refreshBtn" onclick="runQuery(true)">Actualizar</button>
+      </div>
     </div>
-    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn primary" id="saveBtn">Guardar y consultar</button><button class="btn" id="closeBtn">Cerrar</button><button class="btn danger" id="clearBtn">Restaurar lista base</button></div>
-  </section>
+  </header>
 
-  <section class="kpis">
-    <div class="kpi blue"><b id="kDocs">0</b><span>Documentos consultados</span></div>
-    <div class="kpi amber"><b id="kVisadores">0</b><span>Visadores habilitados</span></div>
-    <div class="kpi purple"><b id="kFirmantes">0</b><span>Firmantes habilitados</span></div>
-    <div class="kpi amber"><b id="kActions">0</b><span>Acciones habilitadas</span></div>
-    <div class="kpi red"><b id="kRejected">0</b><span>Rechazos / observaciones</span></div>
-    <div class="kpi green"><b id="kNumbers">0</b><span>Docs con numeración</span></div>
-  </section>
+  <main class="wrap">
+    <div class="status">
+      <span class="pill"><span class="dot" id="connDot"></span><span id="connText">Sin consulta</span></span>
+      <span class="pill" id="lastUpdate">Última actualización: —</span>
+      <span class="pill" id="nextUpdate">Próxima actualización: —</span>
+      <span class="pill" id="sourceInfo">Lista oficial</span>
+    </div>
+    <div class="progress"><div class="bar" id="progressBar"></div></div>
 
-  <section class="filters">
-    <div><label>Buscar</label><input id="q" placeholder="Nombre, documento, ID firma o número"></div>
-    <div><label>Mostrar</label><select id="show"><option value="habilitados">Solo habilitados</option><option value="todos">Todos los pendientes</option></select></div>
-    <div><label>Ordenar</label><select id="sort"><option value="count">Mayor carga</option><option value="name">Nombre A-Z</option></select></div>
-    <button class="btn" id="clearFiltersBtn">Limpiar</button>
-  </section>
+    <section class="kpis">
+      <div class="kpi"><b id="kpiDocs">0</b><span>Docs activos</span></div>
+      <div class="kpi"><b id="kpiPersons">0</b><span>Personas con pendientes</span></div>
+      <div class="kpi"><b id="kpiVis">0</b><span>Visaciones habilitadas</span></div>
+      <div class="kpi"><b id="kpiFirm">0</b><span>Firmas habilitadas</span></div>
+      <div class="kpi"><b id="kpiReject">0</b><span>Rechazados / errores</span></div>
+    </section>
 
-  <section>
-    <div class="section-title"><div><h2>Visadores habilitados</h2><p id="visSub">Personas que pueden visar ahora, según el orden de visación del documento.</p></div><span class="right" id="lastBox"></span></div>
-    <div class="cards" id="visCards"><div class="empty">Sin datos.</div></div>
-  </section>
+    <section class="controls">
+      <input class="control" id="searchBox" placeholder="Buscar por persona, documento, ID o código…" oninput="renderAll()" />
+      <select class="control" id="stageFilter" onchange="renderAll()">
+        <option value="all">Todas las etapas</option>
+        <option value="visacion">Solo visación</option>
+        <option value="firma">Solo firma</option>
+        <option value="enumeracion">Solo enumeración</option>
+        <option value="rechazado">Rechazados / errores</option>
+      </select>
+      <select class="control" id="sortMode" onchange="renderAll()">
+        <option value="priority">Orden ejecutivo</option>
+        <option value="person">Persona A-Z</option>
+        <option value="doc">Documento / ID</option>
+      </select>
+    </section>
 
-  <section>
-    <div class="section-title"><div><h2>Firmantes habilitados</h2><p id="firmSub">Firmantes que pueden firmar porque las visaciones anteriores están completas.</p></div></div>
-    <div class="cards" id="firmCards"><div class="empty">Sin datos.</div></div>
-  </section>
+    <div class="layout">
+      <section class="panel">
+        <div class="panel-head">
+          <div><div class="panel-title">Pendientes por visador / firmante</div><div class="panel-sub">Cada tarjeta despliega los documentos que requieren acción</div></div>
+        </div>
+        <div class="cards" id="personCards"></div>
+      </section>
 
-  <section class="docs">
-    <div class="section-title"><div><h2>Detalle por documento</h2><p>Vista de auditoría para revisar quién visó, quién firmó y qué etapa sigue.</p></div></div>
-    <div id="docList"><div class="empty">Sin documentos consultados.</div></div>
-  </section>
-</main>
-<div class="toast" id="toast"></div>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+      <aside class="side">
+        <section class="panel">
+          <div class="panel-head"><div><div class="panel-title">Ranking de carga</div><div class="panel-sub">Personas con más pendientes habilitados</div></div></div>
+          <div class="rank" id="rankingBox"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><div><div class="panel-title">Documentos activos</div><div class="panel-sub">Resumen por documento</div></div></div>
+          <div class="docs" id="docList"></div>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <div class="modal" id="configModal">
+    <div class="dialog">
+      <div class="dialog-head">
+        <div><strong>Parametrización local</strong><div class="hint">Esto solo afecta tu navegador. Para cambiar la lista oficial, edita DEFAULT_IDS en el código.</div></div>
+        <button class="btn" onclick="closeConfig()">Cerrar</button>
+      </div>
+      <div class="dialog-body">
+        <div class="field">
+          <label>IDs de documentos</label>
+          <textarea id="idsInput" placeholder="59720\n59703"></textarea>
+          <div class="hint">Acepta IDs de 5 dígitos separados por salto de línea, coma, espacio o punto y coma.</div>
+        </div>
+        <button class="btn primary" onclick="saveConfig()">Guardar y actualizar</button>
+      </div>
+    </div>
+  </div>
+
 <script>
-'use strict';
-// =====================================================
-// CONFIGURACIÓN API PARA PUBLICACIÓN EN GITHUB PAGES
-// =====================================================
-// GitHub Pages sirve este HTML desde un dominio github.io.
-// Si la API del sistema de firma no permite CORS para ese dominio,
-// el navegador bloqueará la consulta directa. Por eso este panel
-// intenta conexión directa y, si falla, usa un proxy CORS de apoyo.
-//
-// Producción ideal: reemplazar CORS_PROXIES por un proxy institucional
-// controlado por TI, por ejemplo:
-// const CORS_PROXIES = ['https://tu-dominio-interno/api/firma?url='];
-// =====================================================
-const API_BASE='https://sistemas.mbienes.gob.cl/web/sitios/firma/get_datos_firma.php?id=';
-const CORS_PROXIES=[
-  'https://api.allorigins.win/get?url='
+/* ===================== CONFIGURACIÓN BASE ===================== */
+const API_BASE = 'https://sistemas.mbienes.gob.cl/web/sitios/firma/get_datos_firma.php?id=';
+const DEFAULT_IDS = [
+  '59720','59703','59688','59514','59499','59422','57551','57542','59983','59893','60145'
 ];
-const IS_GITHUB_PAGES=location.hostname.endsWith('github.io');
-const LS_IDS='panel_firma_ids_v5';
-// IDs preconfigurados para que cualquier persona que abra el enlace vea el panel listo.
-// Si se guardan IDs desde "Parametrizar", esos reemplazan estos valores solo en ese navegador.
-const DEFAULT_IDS=['59720','59703','59688','59514','59499','59422','57551','57542','59983','59893','60145'];
-const REFRESH_SECONDS=300;
-const SPECIAL_SIGNERS=['JAVIER PERÓ OVALLE','JAVIER PERO OVALLE','MARIA CATALINA PAROT DONOSO','MARÍA CATALINA PAROT DONOSO'];
-const SEQUENTIAL_VISADORES=['CRISTIAN PARRAGUEZ LEIVA','STEFAN ANDRÉS GOECKE RUZ','STEFAN ANDRES GOECKE RUZ'];
-let docs=[]; let countdown=REFRESH_SECONDS; let timer=null; let running=false;
-const $=id=>document.getElementById(id);
-const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const cleanId=v=>String(v??'').trim();
-const parseIds=raw=>[...new Set(String(raw||'').split(/[^0-9]+/).map(cleanId).filter(x=>/^\d{5}$/.test(x)))];
-const normName=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ').trim();
-const isSpecialSigner=p=>SPECIAL_SIGNERS.some(n=>normName(p.nombre).includes(normName(n)));
-const isSequentialVisador=p=>SEQUENTIAL_VISADORES.some(n=>normName(p.nombre).includes(normName(n)));
-const saveIds=ids=>localStorage.setItem(LS_IDS,JSON.stringify(ids.map(String)));
-const loadIds=()=>{try{const stored=localStorage.getItem(LS_IDS);if(stored){const ids=(JSON.parse(stored)||[]).map(String).filter(x=>/^\d{5}$/.test(x));if(ids.length)return ids;}}catch(e){}return DEFAULT_IDS.map(String).filter(x=>/^\d{5}$/.test(x));};
-function toast(msg){$('toast').textContent=msg;$('toast').classList.add('on');setTimeout(()=>$('toast').classList.remove('on'),2200)}
-function notice(msg,err=false){$('notice').textContent=msg;$('notice').className='notice on'+(err?' err':'')}
-function hideNotice(){$('notice').className='notice'}
-function openConfig(){$('idsBox').value=loadIds().join('\n');$('config').classList.add('on')}
-function closeConfig(){$('config').classList.remove('on')}
-function normState(s){s=String(s||'').toLowerCase(); if(/rechaz|devuel|observ/.test(s))return'rechazado'; if(/firmad|visad|aprob|complet|enumerad/.test(s))return'ok'; if(/pend|espera|ingres/.test(s))return'pendiente'; return'desconocido'}
-const lbl={visacion:'Visación',firma:'Firma',enumeracion:'Enumeración'};
-function readPeople(d,stage){return (d?.[stage]||[]).map((p,idx)=>({idx,stage,nombre:p.nombre||'Sin nombre',dependencia:p.dependencia||'',estado:normState(p.estado),estadoRaw:p.estado||'',numero:p.numeracion||p.numero||''}));}
-function allPeople(d){return ['visacion','firma','enumeracion'].flatMap(s=>readPeople(d,s));}
-function numbers(d){const out=[]; for(const p of readPeople(d,'enumeracion')) if(p.numero)out.push(String(p.numero)); return [...new Set(out)];}
-function allPriorOk(arr,idx){return arr.slice(0,idx).every(p=>p.estado==='ok')}
-function allVisacionOk(d){const arr=readPeople(d,'visacion'); return arr.length>0 && arr.every(p=>p.estado==='ok')}
-function statusDoc(r){const d=r?.data; if(!r?.ok)return'error'; const ds=normState(d?.documento?.estado||''); if(ds==='rechazado')return'rechazado'; if(allPeople(d).some(p=>p.estado==='rechazado'))return'rechazado'; if(allPeople(d).some(p=>p.estado==='pendiente'||p.estado==='desconocido'))return'pendiente'; return'ok'}
-function isFinalizado(r){
-  if(!r?.ok || !r.data) return false;
-  if(statusDoc(r)==='rechazado') return false;
-  const d=r.data;
-  const firmas=readPeople(d,'firma');
-  const enums=readPeople(d,'enumeracion');
-  const vis=readPeople(d,'visacion');
-  const firmasOk=firmas.length>0 && firmas.every(p=>p.estado==='ok');
-  const enumOk=enums.length===0 || enums.every(p=>p.estado==='ok');
-  const visOk=vis.length===0 || vis.every(p=>p.estado==='ok');
-  return firmasOk && enumOk && visOk;
+
+const AUTO_REFRESH_SECONDS = 5 * 60;
+const CONCURRENCY = 3;
+const REQUEST_TIMEOUT_MS = 6500;
+const CACHE_TTL_MS = 2 * 60 * 1000;
+const LS_IDS = 'panel_firma_ids_v4';
+const LS_CACHE = 'panel_firma_cache_v4';
+const LS_THEME = 'panel_firma_theme_v4';
+
+/* Personas con regla especial de habilitación. Se comparan por nombre normalizado, no por RUT. */
+const FIRMANTES = ['JAVIER PERO', 'JAVIER PERÓ', 'MARIA CATALINA PAROT', 'MARÍA CATALINA PAROT'];
+const VISADORES_SECUENCIALES = ['CRISTIAN PARRAGUEZ', 'STEFAN GOECKE'];
+
+let rawResults = [];
+let activeDocs = [];
+let pendingTasks = [];
+let secondsLeft = AUTO_REFRESH_SECONDS;
+let timer = null;
+
+/* ===================== UTILIDADES ===================== */
+function esc(v){return String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
+function cleanName(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Ñ/g,'N').replace(/ñ/g,'n').toUpperCase().replace(/\s+/g,' ').trim();}
+function hasName(name, list){const n=cleanName(name);return list.some(x=>n.includes(cleanName(x)));}
+function parseIds(raw){return [...new Set(String(raw||'').split(/[,;\s]+/).map(s=>s.trim()).filter(s=>/^\d{5}$/.test(s)))];}
+function getIds(){try{const saved=parseIds(localStorage.getItem(LS_IDS)||'');if(saved.length){document.getElementById('sourceInfo').textContent='Lista local personalizada';return saved;}}catch(e){}document.getElementById('sourceInfo').textContent='Lista oficial';return [...DEFAULT_IDS];}
+function normState(s){s=cleanName(s); if(/RECHAZ|DEVUEL|OBSERV/.test(s)) return 'rejected'; if(/FIRMAD|VISAD|APROBAD|COMPLET|OK|NUMERAD|ENUMERAD/.test(s)) return 'ok'; if(/PEND|SIN ACCION|ESPERA|PROCESO/.test(s)) return 'pending'; return 'unknown';}
+function stageLabel(sec){return {visacion:'Visación',firma:'Firma',enumeracion:'Enumeración'}[sec]||sec;}
+function nowLabel(){return new Date().toLocaleString('es-CL',{dateStyle:'short',timeStyle:'medium'});}
+function setConn(kind,msg){const dot=document.getElementById('connDot');dot.className='dot '+(kind||'');document.getElementById('connText').textContent=msg;}
+function setProgress(done,total){document.getElementById('progressBar').style.width= total? Math.round(done/total*100)+'%' : '0%';}
+function withTimeout(ms){return AbortSignal.timeout ? AbortSignal.timeout(ms) : undefined;}
+
+/* ===================== API ===================== */
+async function fetchJsonDirect(id){
+  const r = await fetch(API_BASE + encodeURIComponent(id), {signal: withTimeout(REQUEST_TIMEOUT_MS), cache:'no-store'});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const text = await r.text();
+  try{return JSON.parse(text);}catch(e){throw new Error('Respuesta no JSON');}
 }
-function initials(n){return String(n||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?'}
-async function fetchTextWithTimeout(url, timeoutMs=12000){
-  const ctrl=new AbortController();
-  const t=setTimeout(()=>ctrl.abort(),timeoutMs);
-  try{
-    const r=await fetch(url,{signal:ctrl.signal,cache:'no-store'});
-    if(!r.ok)throw new Error('HTTP '+r.status);
-    return await r.text();
-  } finally { clearTimeout(t); }
-}
-function parseApiPayload(text){
-  let data;
-  try{ data=JSON.parse(text); }
-  catch{ throw new Error('Respuesta no es JSON'); }
-  if(data && typeof data==='object' && typeof data.contents==='string'){
-    try{ data=JSON.parse(data.contents); }
-    catch{ throw new Error('Proxy respondió, pero contents no es JSON'); }
-  }
-  return data;
+async function fetchJsonProxy(id){
+  const url = API_BASE + encodeURIComponent(id);
+  const proxy = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+  const r = await fetch(proxy, {signal: withTimeout(REQUEST_TIMEOUT_MS + 2500), cache:'no-store'});
+  if(!r.ok) throw new Error('Proxy HTTP '+r.status);
+  const j = await r.json();
+  try{return JSON.parse(j.contents);}catch(e){throw new Error('Proxy sin JSON válido');}
 }
 async function fetchDoc(id){
-  const clean=cleanId(id);
-  if(!/^\d{5}$/.test(clean))return{id:clean,ok:false,reason:'ID inválido: debe tener 5 dígitos.',data:null};
-
-  const targetUrl=API_BASE+encodeURIComponent(clean);
-  const attempts=[];
-
-  // En GitHub Pages probamos proxy primero para evitar bloqueo CORS inmediato.
-  // Fuera de GitHub, probamos directo primero.
-  if(!IS_GITHUB_PAGES)attempts.push({label:'directo',url:targetUrl,timeout:12000});
-  for(const proxy of CORS_PROXIES)attempts.push({label:'proxy',url:proxy+encodeURIComponent(targetUrl),timeout:15000});
-  if(IS_GITHUB_PAGES)attempts.push({label:'directo',url:targetUrl,timeout:12000});
-
-  const errors=[];
-  for(const a of attempts){
+  id=String(id).trim();
+  try{
+    const data = await fetchJsonDirect(id);
+    return {id, ok:!!data, data:data||null, reason:data?'':'Documento sin datos', via:'directa'};
+  }catch(e1){
     try{
-      const text=await fetchTextWithTimeout(a.url,a.timeout);
-      const data=parseApiPayload(text);
-      if(!data)return{id:clean,ok:false,reason:'La API respondió, pero no entregó datos para este ID.',data:null};
-      return{id:clean,ok:true,reason:a.label==='proxy'?'Conectado mediante proxy CORS para GitHub Pages.':'',data};
-    }catch(e){
-      errors.push(a.label+': '+(e.message||e.name||'error'));
+      const data = await fetchJsonProxy(id);
+      return {id, ok:!!data, data:data||null, reason:data?'':'Documento sin datos', via:'proxy'};
+    }catch(e2){
+      return {id, ok:false, data:null, reason:e1.message+' / '+e2.message, via:'error'};
     }
   }
-  return{id:clean,ok:false,reason:'No se pudo conectar con la API. '+errors.join(' | '),data:null};
 }
+async function fetchAll(ids){
+  const out = new Array(ids.length);
+  let index = 0, done = 0;
+  async function worker(){
+    while(index < ids.length){
+      const my = index++;
+      out[my] = await fetchDoc(ids[my]);
+      done++; setProgress(done, ids.length); document.title = `Cargando ${done}/${ids.length} — Panel Firma`;
+    }
+  }
+  await Promise.all(Array.from({length:Math.min(CONCURRENCY, ids.length)}, worker));
+  return out;
+}
+function saveCache(ids,results){try{localStorage.setItem(LS_CACHE, JSON.stringify({t:Date.now(), ids, results}));}catch(e){}}
+function loadCache(ids){try{const c=JSON.parse(localStorage.getItem(LS_CACHE)||'null');if(!c) return null; if(Date.now()-c.t>CACHE_TTL_MS) return null; if(JSON.stringify(c.ids)!==JSON.stringify(ids)) return null; return c.results;}catch(e){return null;}}
 
-function buildAssignments(kind){
-  const q=$('q').value.toLowerCase().trim(); const show=$('show').value; const map={};
-  for(const r of docs){const d=r.data, doc=d?.documento||{}, nums=numbers(d); if(!r.ok)continue;
-    if(kind==='visador'){
-      const vis=readPeople(d,'visacion');
-      for(const p of vis){
-        if(!(p.estado==='pendiente'||p.estado==='desconocido'||p.estado==='rechazado'))continue;
-        const enabled=isSequentialVisador(p)?allPriorOk(vis,p.idx):true;
-        if(show==='habilitados' && !enabled)continue;
-        add(map,p,{id:r.id,doc,person:p,nums,enabled,kind:'visador',reason:enabled?'Habilitado para visar':'Aún no habilitado: falta visación previa'});
-      }
-    }
-    if(kind==='firmante'){
-      const firma=readPeople(d,'firma'); const visOk=allVisacionOk(d);
-      for(const p of firma){
-        if(!isSpecialSigner(p))continue;
-        if(!(p.estado==='pendiente'||p.estado==='desconocido'||p.estado==='rechazado'))continue;
-        const enabled=visOk;
-        if(show==='habilitados' && !enabled)continue;
-        add(map,p,{id:r.id,doc,person:p,nums,enabled,kind:'firmante',reason:enabled?'Habilitado para firma':'Aún no habilitado: faltan visaciones previas'});
-      }
-    }
-  }
-  let arr=Object.values(map);
-  if(q){arr=arr.filter(x=>[x.nombre,x.dependencia,...x.items.flatMap(it=>[it.id,it.doc?.tema,it.person.estadoRaw,it.person.numero,it.reason,...it.nums])].join(' ').toLowerCase().includes(q));}
-  const sort=$('sort').value; arr.sort((a,b)=>sort==='name'?a.nombre.localeCompare(b.nombre):b.items.length-a.items.length||a.nombre.localeCompare(b.nombre)); return arr;
+/* ===================== LÓGICA DE NEGOCIO ===================== */
+function allPreviousOk(arr, idx){return arr.slice(0,idx).every(p=>normState(p.estado)==='ok');}
+function allVisacionesOk(d){const v=d?.visacion||[]; return v.length ? v.every(p=>normState(p.estado)==='ok') : true;}
+function hasRejected(d){return ['visacion','firma','enumeracion'].some(sec=>(d?.[sec]||[]).some(p=>normState(p.estado)==='rejected')) || normState(d?.documento?.estado)==='rejected';}
+function isFinalizado(d){
+  if(!d || hasRejected(d)) return false;
+  const visOk = allVisacionesOk(d);
+  const firma = d.firma||[];
+  const firmaOk = firma.length ? firma.every(p=>normState(p.estado)==='ok') : false;
+  const en = d.enumeracion||[];
+  const enumOk = en.length ? en.every(p=>normState(p.estado)==='ok') : true;
+  return visOk && firmaOk && enumOk;
 }
-function add(map,p,item){const key=normName(p.nombre)||'SIN_NOMBRE'; if(!map[key])map[key]={nombre:p.nombre||'Sin nombre',dependencia:p.dependencia||'',items:[]}; map[key].items.push(item)}
-function render(){const vis=buildAssignments('visador'), firm=buildAssignments('firmante'); const rejected=docs.filter(r=>statusDoc(r)==='rechazado').length; const nums=docs.filter(r=>numbers(r.data).length).length; const actions=vis.reduce((a,p)=>a+p.items.length,0)+firm.reduce((a,p)=>a+p.items.length,0); $('kDocs').textContent=docs.length; $('kVisadores').textContent=vis.length; $('kFirmantes').textContent=firm.length; $('kActions').textContent=actions; $('kRejected').textContent=rejected; $('kNumbers').textContent=nums; document.title=(rejected?'⚠ '+rejected+' observado(s) — ':'')+'Panel de Firma'; $('visSub').textContent=vis.length?vis.length+' visador(es) con acciones para revisar.':'Sin visadores habilitados para los filtros actuales.'; $('firmSub').textContent=firm.length?firm.length+' firmante(s) habilitado(s) para firma.':'Sin firmantes habilitados para los filtros actuales.'; $('visCards').innerHTML=vis.length?vis.map(x=>renderPersonCard(x,'visador')).join(''):'<div class="empty">Sin visadores habilitados.</div>'; $('firmCards').innerHTML=firm.length?firm.map(x=>renderPersonCard(x,'firmante')).join(''):'<div class="empty">Sin firmantes habilitados.</div>'; $('docList').innerHTML=docs.length?docs.map(renderDoc).join(''):'<div class="empty">Sin documentos activos. Los finalizados salen automáticamente del panel.</div>';}
-function renderPersonCard(x,kind){const reject=x.items.filter(it=>it.person.estado==='rechazado').length; const cls=kind==='firmante'?'sign':''; return `<article class="person-card"><button class="person-head" type="button" data-toggle-card><div class="avatar ${cls}">${esc(initials(x.nombre))}</div><div><div class="person-name">${esc(x.nombre)}</div><div class="person-sub">${esc(kind==='firmante'?'Firmante':'Visador')}${x.dependencia?' · '+esc(x.dependencia):''}</div></div><div><div class="count" style="color:${kind==='firmante'?'var(--purple)':reject?'var(--red)':'var(--amber)'}">${x.items.length}</div><div class="count-label">pendiente(s)</div><div class="chev">›</div></div></button><div class="person-body"><div class="person-tools"><span class="badge ${reject?'reject':kind==='firmante'?'purple':'pending'}">${reject?reject+' observado(s)':kind==='firmante'?'Pendientes de firma':'Pendientes de visación'}</span><button class="mini" data-copy="${esc(x.items.map(it=>'ID firma '+it.id+(it.nums.length?' · N° '+it.nums.join(', '):'')+' · '+(it.doc?.tema||'Sin título')).join('\n'))}">Copiar cola</button></div><div class="pending-list">${x.items.map(renderTodo).join('')}</div></div></article>`}
-function renderTodo(it){const p=it.person, doc=it.doc||{}; const stateCls=p.estado==='rechazado'?'reject':it.enabled?'pending':'wait'; const title=doc.tema||'Sin título'; const action=it.kind==='firmante'?'Firma':'Visación'; const copy='ID firma '+it.id+(it.nums.length?' · N° '+it.nums.join(', '):''); return `<div class="todo"><div class="todo-title">${esc(title)}</div><div class="todo-meta"><span class="badge blue">ID firma ${esc(it.id)}</span>${it.nums.map(n=>`<span class="badge blue">N° ${esc(n)}</span>`).join('')}<span class="badge ${stateCls}">${esc(action)}: ${esc(p.estadoRaw||p.estado)}</span><span class="badge ${it.enabled?'ok':'wait'}">${esc(it.reason)}</span></div><div class="todo-foot">${esc(p.dependencia||'Sin dependencia')}${doc.fecha_creacion?' · Creado: '+esc(doc.fecha_creacion):''}</div><div style="margin-top:8px"><button class="mini" data-copy="${esc(copy)}">Copiar ID/N°</button></div></div>`}
-function renderDoc(r){const d=r.data, doc=d?.documento||{}; const st=statusDoc(r); const cls=st==='rechazado'?'reject':st==='error'?'reject':st==='ok'?'ok':'pending'; return `<details class="doc"><summary><div class="doc-title">${esc(doc.tema||'Sin título / sin datos')}</div><div class="todo-meta"><span class="badge blue">ID firma ${esc(r.id)}</span>${numbers(d).map(n=>`<span class="badge blue">N° ${esc(n)}</span>`).join('')}<span class="badge ${cls}">${esc(st==='ok'?'Completo':st==='pendiente'?'Pendiente':st==='rechazado'?'Rechazado/observado':'Error API')}</span></div>${!r.ok?`<p class="small" style="color:var(--red);font-weight:850">${esc(r.reason)}</p>`:''}</summary><div class="doc-grid">${['visacion','firma','enumeracion'].map(s=>renderStage(d,s)).join('')}</div></details>`}
-function renderStage(d,s){const arr=readPeople(d,s); return `<section class="stage"><h3>${esc(lbl[s])}</h3>${arr.length?arr.map(p=>`<div class="line"><b>${esc(p.nombre||'Sin nombre')}</b><p>${esc(p.dependencia||'Sin dependencia')}</p><div class="todo-meta"><span class="badge ${p.estado==='rechazado'?'reject':p.estado==='ok'?'ok':'pending'}">${esc(p.estadoRaw||p.estado)}</span>${p.numero?`<span class="badge blue">N° ${esc(p.numero)}</span>`:''}</div></div>`).join(''):'<div class="small">Sin registros</div>'}</section>`}
-async function update(){
-  const ids=loadIds();
-  if(!ids.length){docs=[];render();openConfig();toast('Carga IDs para iniciar');return;}
-  if(running)return;
-  running=true;
-  $('refreshBtn').disabled=true;
-  $('refreshBtn').textContent='Consultando...';
-  const raw=[];
-  docs=[];
-  notice('Consultando API...');
-  for(const id of ids){
-    const item=await fetchDoc(id);
-    raw.push(item);
-    docs=raw.filter(r=>!isFinalizado(r));
-    render();
-  }
-  $('refreshBtn').disabled=false;
-  $('refreshBtn').textContent='Actualizar';
-  running=false;
-  countdown=REFRESH_SECONDS;
-  const errors=docs.filter(r=>!r.ok).length;
-  const finalizados=raw.filter(isFinalizado).length;
-  if(errors)notice(errors+' documento(s) con error de conexión o sin datos. '+(finalizados?finalizados+' finalizado(s) fuera del panel.':''),true);
-  else if(finalizados)notice(finalizados+' documento(s) finalizado(s) fueron omitidos del panel operativo.');
-  else hideNotice();
-  $('lastBox').textContent=new Date().toLocaleString('es-CL')+' · '+docs.length+' documento(s) activo(s)';
-  render();
-}
-function rowsHabilitados(){
-  const rows=[];
-  for(const kind of ['visador','firmante']){
-    for(const x of buildAssignments(kind)){
-      for(const it of x.items){
-        rows.push({
-          Persona:x.nombre,
-          Rol:kind==='firmante'?'Firmante':'Visador',
-          Dependencia:x.dependencia||'',
-          Accion:lbl[it.person.stage]||it.person.stage,
-          Habilitado:it.enabled?'Sí':'No',
-          Motivo:it.reason||'',
-          Estado:it.person.estadoRaw||it.person.estado||'',
-          ID_Firma:String(it.id),
-          Numeracion:it.nums.join('; '),
-          Documento:it.doc?.tema||'',
-          Fecha_Creacion:it.doc?.fecha_creacion||''
-        });
-      }
-    }
-  }
-  return rows;
-}
-function rowsDetalleDocumentos(){
-  const rows=[];
-  for(const r of docs){
-    const d=r.data, doc=d?.documento||{};
-    if(!r.ok){
-      rows.push({ID_Firma:String(r.id), Documento:'', Etapa:'Error API', Persona:'', Dependencia:'', Estado:r.reason||'Error', Numeracion:'', Estado_Documento:'Error'});
+function documentTitle(d,id){const doc=d?.documento||{};return doc.tema || doc.materia || doc.nombre || doc.asunto || `Documento ${id}`;}
+function documentCode(d){const doc=d?.documento||{};return doc.codigo || doc.numero || doc.nro || doc.folio || '';}
+function documentDate(d){const doc=d?.documento||{};return doc.fecha_creacion || doc.fecha || doc.created_at || '';}
+function buildTasks(results){
+  const docs=[]; const tasks=[];
+  for(const r of results){
+    const d=r.data;
+    if(!r.ok || !d){
+      docs.push({id:r.id, code:'', title:'Documento sin datos', date:'', status:'error', reason:r.reason, tasks:[]});
+      tasks.push({id:r.id, code:'', title:'Documento sin datos', date:'', stage:'rechazado', person:'Error API / sin datos', state:'error', reason:r.reason, action:'Revisar conexión o ID'});
       continue;
     }
-    for(const etapa of ['visacion','firma','enumeracion']){
-      const personas=readPeople(d,etapa);
-      if(!personas.length){
-        rows.push({ID_Firma:String(r.id), Codigo:doc.codigo||'', Documento:doc.tema||'', Fecha_Creacion:doc.fecha_creacion||'', Etapa:lbl[etapa], Persona:'Sin registros', Dependencia:'', Estado:'', Numeracion:'', Estado_Documento:statusDoc(r)});
-      } else {
-        for(const p of personas){
-          rows.push({
-            ID_Firma:String(r.id),
-            Codigo:doc.codigo||'',
-            Documento:doc.tema||'',
-            Fecha_Creacion:doc.fecha_creacion||'',
-            Etapa:lbl[etapa],
-            Persona:p.nombre||'',
-            Dependencia:p.dependencia||'',
-            Estado:p.estadoRaw||p.estado||'',
-            Numeracion:p.numero||'',
-            Estado_Documento:statusDoc(r)
-          });
-        }
+    if(isFinalizado(d)) continue;
+    const docTasks=[];
+    const title=documentTitle(d,r.id), code=documentCode(d), date=documentDate(d);
+    if(hasRejected(d)){
+      const t={id:r.id, code, title, date, stage:'rechazado', person:'Documento observado/rechazado', state:'rejected', reason:'Existe rechazo u observación en el flujo', action:'Revisar rechazo'};
+      tasks.push(t); docTasks.push(t);
+    }
+    for(const sec of ['visacion','firma','enumeracion']){
+      const arr=d[sec]||[];
+      for(let i=0;i<arr.length;i++){
+        const p=arr[i]; const st=normState(p.estado);
+        if(st!=='pending' && st!=='unknown') continue;
+        let enabled=true;
+        if(sec==='firma') enabled=allVisacionesOk(d);
+        if(sec==='visacion' && hasName(p.nombre,VISADORES_SECUENCIALES)) enabled=allPreviousOk(arr,i);
+        if(!enabled) continue;
+        const task={
+          id:r.id, code, title, date, stage:sec, person:p.nombre || 'Sin nombre', state:st,
+          reason:p.estado || '', action:sec==='visacion'?'Visar':sec==='firma'?'Firmar':'Enumerar',
+          numero:p.numeracion || p.numero || ''
+        };
+        tasks.push(task); docTasks.push(task);
       }
     }
+    docs.push({id:r.id, code, title, date, status:docTasks.length?'active':'waiting', reason:'Sin pendientes habilitados', tasks:docTasks});
   }
-  return rows;
+  return {docs,tasks};
 }
-function rowsResumen(){
-  const vis=buildAssignments('visador'), firm=buildAssignments('firmante');
-  return [
-    {Indicador:'Documentos consultados', Valor:docs.length},
-    {Indicador:'Visadores habilitados', Valor:vis.length},
-    {Indicador:'Firmantes habilitados', Valor:firm.length},
-    {Indicador:'Acciones habilitadas', Valor:vis.reduce((a,p)=>a+p.items.length,0)+firm.reduce((a,p)=>a+p.items.length,0)},
-    {Indicador:'Rechazos / observaciones', Valor:docs.filter(r=>statusDoc(r)==='rechazado').length},
-    {Indicador:'Documentos con numeración', Valor:docs.filter(r=>numbers(r.data).length).length},
-    {Indicador:'Fecha exportación', Valor:new Date().toLocaleString('es-CL')}
-  ];
+
+/* ===================== RENDER ===================== */
+function filteredTasks(){
+  const q=cleanName(document.getElementById('searchBox').value);
+  const stage=document.getElementById('stageFilter').value;
+  let list=[...pendingTasks];
+  if(stage!=='all') list=list.filter(t=>t.stage===stage || (stage==='rechazado' && (t.state==='rejected'||t.state==='error')));
+  if(q) list=list.filter(t=>cleanName([t.person,t.title,t.id,t.code,t.action].join(' ')).includes(q));
+  const sort=document.getElementById('sortMode').value;
+  if(sort==='person') list.sort((a,b)=>a.person.localeCompare(b.person,'es'));
+  else if(sort==='doc') list.sort((a,b)=>String(a.id).localeCompare(String(b.id),'es'));
+  else list.sort((a,b)=>stageWeight(a)-stageWeight(b) || a.person.localeCompare(b.person,'es'));
+  return list;
 }
-function autosize(ws, rows){
-  const keys=[...new Set(rows.flatMap(r=>Object.keys(r)))];
-  ws['!cols']=keys.map(k=>({wch:Math.min(Math.max(k.length+2, ...rows.map(r=>String(r[k]??'').length+2), 10), 70)}));
+function stageWeight(t){ if(t.state==='rejected'||t.state==='error') return 0; return {firma:1,visacion:2,enumeracion:3}[t.stage]||9; }
+function groupByPerson(tasks){const m=new Map();for(const t of tasks){const k=t.person||'Sin persona';if(!m.has(k))m.set(k,[]);m.get(k).push(t);}return [...m.entries()].sort((a,b)=>b[1].length-a[1].length||a[0].localeCompare(b[0],'es'));}
+function renderCards(){
+  const box=document.getElementById('personCards'); const groups=groupByPerson(filteredTasks());
+  if(!groups.length){box.innerHTML='<div class="empty">No hay pendientes habilitados con los filtros actuales.</div>';return;}
+  box.innerHTML=groups.map(([person,tasks],idx)=>{
+    const firm=tasks.filter(t=>t.stage==='firma').length, vis=tasks.filter(t=>t.stage==='visacion').length, rej=tasks.filter(t=>t.state==='rejected'||t.state==='error').length;
+    return `<article class="person ${idx<3?'open':''}">
+      <button class="person-head" onclick="this.closest('.person').classList.toggle('open')" title="Abrir/cerrar pendientes">
+        <div class="person-main"><div class="person-name">${esc(person)}</div><div class="person-role">${vis?vis+' visación(es) · ':''}${firm?firm+' firma(s) · ':''}${rej?rej+' alerta(s)':''}</div></div>
+        <div class="count">${tasks.length}</div>
+      </button>
+      <div class="person-body">${tasks.map(renderTask).join('')}</div>
+    </article>`;
+  }).join('');
 }
+function renderTask(t){
+  const cls=t.state==='rejected'||t.state==='error'?'bad':t.stage==='firma'?'warn':t.stage==='visacion'?'':'ok';
+  const num=t.numero?`<span class="tag ok">N° ${esc(t.numero)}</span>`:'';
+  return `<div class="task">
+    <div class="task-title">${esc(t.title)}</div>
+    <div class="task-meta">
+      <span class="tag ${cls}">${esc(t.action)}</span>
+      <span class="tag">ID ${esc(t.id)}</span>
+      ${t.code?`<span class="tag">Código ${esc(t.code)}</span>`:''}${num}
+      ${t.reason?`<span class="tag ${t.state==='error'||t.state==='rejected'?'bad':''}" title="${esc(t.reason)}">${esc(String(t.reason).slice(0,28))}${String(t.reason).length>28?'…':''}</span>`:''}
+    </div>
+  </div>`;
+}
+function renderRanking(){
+  const box=document.getElementById('rankingBox'); const groups=groupByPerson(filteredTasks()).slice(0,8);
+  if(!groups.length){box.innerHTML='<div class="empty">Sin pendientes</div>';return;}
+  box.innerHTML=groups.map(([p,ts])=>`<div class="rank-row"><div><div class="rank-name">${esc(p)}</div><div class="rank-meta">${ts.filter(t=>t.stage==='visacion').length} visación · ${ts.filter(t=>t.stage==='firma').length} firma</div></div><strong>${ts.length}</strong></div>`).join('');
+}
+function renderDocs(){
+  const box=document.getElementById('docList');
+  const q=cleanName(document.getElementById('searchBox').value);
+  let docs=activeDocs.filter(d=>!q || cleanName([d.title,d.id,d.code].join(' ')).includes(q) || d.tasks.some(t=>cleanName(t.person).includes(q)));
+  docs=docs.slice(0,20);
+  if(!docs.length){box.innerHTML='<div class="empty">Sin documentos activos</div>';return;}
+  box.innerHTML=docs.map(d=>{
+    const alert=d.status==='error'?'<span class="tag bad">Error</span>':d.tasks.some(t=>t.state==='rejected')?'<span class="tag bad">Rechazado</span>':'<span class="tag warn">Activo</span>';
+    const stages=['visacion','firma','enumeracion'].map(sec=>{
+      const c=d.tasks.filter(t=>t.stage===sec).length;return `<div class="stage"><span>${stageLabel(sec)}</span><strong>${c}</strong></div>`;
+    }).join('');
+    return `<article class="doc"><div class="doc-head"><div><div class="doc-title">${esc(d.title)}</div><div class="doc-meta">ID ${esc(d.id)}${d.code?' · Código '+esc(d.code):''}${d.date?' · '+esc(d.date):''}</div></div>${alert}</div><div class="doc-body">${stages}</div></article>`;
+  }).join('');
+}
+function renderKpis(){
+  const tasks=filteredTasks(); const persons=new Set(tasks.map(t=>t.person));
+  document.getElementById('kpiDocs').textContent=activeDocs.filter(d=>d.status!=='waiting').length;
+  document.getElementById('kpiPersons').textContent=persons.size;
+  document.getElementById('kpiVis').textContent=tasks.filter(t=>t.stage==='visacion').length;
+  document.getElementById('kpiFirm').textContent=tasks.filter(t=>t.stage==='firma').length;
+  document.getElementById('kpiReject').textContent=tasks.filter(t=>t.state==='rejected'||t.state==='error').length;
+  const rej=tasks.filter(t=>t.state==='rejected'||t.state==='error').length;
+  document.title = rej ? `⚠️ ${rej} alerta(s) — Panel Firma` : 'Panel de Seguimiento de Firmas';
+}
+function renderAll(){renderKpis();renderCards();renderRanking();renderDocs();}
+
+/* ===================== EJECUCIÓN ===================== */
+async function runQuery(force=false){
+  const ids=getIds(); setProgress(0,ids.length); setConn('warn',`Consultando ${ids.length} documento(s)…`);
+  document.getElementById('refreshBtn').disabled=true;
+  if(!force){
+    const cached=loadCache(ids);
+    if(cached){ rawResults=cached; afterResults('Datos cargados desde cache local'); document.getElementById('refreshBtn').disabled=false; return; }
+  }
+  rawResults = await fetchAll(ids);
+  saveCache(ids,rawResults);
+  afterResults('Consulta finalizada');
+  document.getElementById('refreshBtn').disabled=false;
+}
+function afterResults(msg){
+  const built=buildTasks(rawResults); activeDocs=built.docs; pendingTasks=built.tasks;
+  setProgress(1,1); setConn('ok',msg); document.getElementById('lastUpdate').textContent='Última actualización: '+nowLabel();
+  secondsLeft=AUTO_REFRESH_SECONDS; renderAll(); startTimer();
+}
+function startTimer(){
+  if(timer) clearInterval(timer);
+  timer=setInterval(()=>{
+    secondsLeft--; if(secondsLeft<0){secondsLeft=AUTO_REFRESH_SECONDS; runQuery(true); return;}
+    const m=Math.floor(secondsLeft/60), s=String(secondsLeft%60).padStart(2,'0');
+    document.getElementById('nextUpdate').textContent=`Próxima actualización: ${m}:${s}`;
+  },1000);
+}
+
+/* ===================== CONFIG / UX ===================== */
+function openConfig(){document.getElementById('idsInput').value=getIds().join('\n');document.getElementById('configModal').classList.add('on');}
+function closeConfig(){document.getElementById('configModal').classList.remove('on');}
+function saveConfig(){const ids=parseIds(document.getElementById('idsInput').value); if(!ids.length){alert('No hay IDs válidos de 5 dígitos.');return;} localStorage.setItem(LS_IDS,ids.join('\n')); closeConfig(); runQuery(true);}
+function clearLocalConfig(){localStorage.removeItem(LS_IDS); localStorage.removeItem(LS_CACHE); runQuery(true);}
+function toggleTheme(){const root=document.documentElement;const next=root.getAttribute('data-theme')==='dark'?'light':'dark';root.setAttribute('data-theme',next);localStorage.setItem(LS_THEME,next);}
+function initTheme(){const t=localStorage.getItem(LS_THEME)||'light';document.documentElement.setAttribute('data-theme',t);}
+
 function exportExcel(){
-  if(!docs.length){toast('Sin datos para exportar');return;}
-  if(typeof XLSX==='undefined'){
-    toast('No se cargó la librería Excel. Revisa conexión o instala SheetJS en la intranet.');
-    return;
-  }
-  const resumen=rowsResumen();
-  const habilitados=rowsHabilitados();
-  const detalle=rowsDetalleDocumentos();
-  const errores=docs.filter(r=>!r.ok).map(r=>({ID_Firma:String(r.id), Error:r.reason||'Error no especificado'}));
-  const wb=XLSX.utils.book_new();
-  const sheets=[
-    ['Resumen', resumen],
-    ['Habilitados', habilitados.length?habilitados:[{Mensaje:'Sin acciones habilitadas con los filtros actuales'}]],
-    ['Detalle_documentos', detalle.length?detalle:[{Mensaje:'Sin detalle'}]],
-    ['Errores_API', errores.length?errores:[{Mensaje:'Sin errores'}]]
+  if(!pendingTasks.length){alert('No hay datos para exportar.');return;}
+  const resumen=[
+    {Indicador:'Documentos activos',Valor:activeDocs.filter(d=>d.status!=='waiting').length},
+    {Indicador:'Personas con pendientes',Valor:new Set(pendingTasks.map(t=>t.person)).size},
+    {Indicador:'Visaciones habilitadas',Valor:pendingTasks.filter(t=>t.stage==='visacion').length},
+    {Indicador:'Firmas habilitadas',Valor:pendingTasks.filter(t=>t.stage==='firma').length},
+    {Indicador:'Rechazados / errores',Valor:pendingTasks.filter(t=>t.state==='rejected'||t.state==='error').length},
+    {Indicador:'Actualizado',Valor:nowLabel()}
   ];
-  for(const [name, rows] of sheets){
-    const ws=XLSX.utils.json_to_sheet(rows);
-    autosize(ws, rows);
-    XLSX.utils.book_append_sheet(wb, ws, name);
-  }
+  const habilitados=pendingTasks.map(t=>({Persona:t.person, Accion:t.action, Etapa:stageLabel(t.stage), ID_sistema_firma:t.id, Codigo:t.code, Numero:t.numero||'', Documento:t.title, Estado:t.reason||t.state, Fecha:t.date||''}));
+  const docs=activeDocs.map(d=>({ID_sistema_firma:d.id,Codigo:d.code,Documento:d.title,Fecha:d.date,Estado:d.status,Razon:d.reason||'',Pendientes_habilitados:d.tasks.length}));
+  const errors=rawResults.filter(r=>!r.ok).map(r=>({ID_sistema_firma:r.id,Error:r.reason||'Sin datos',Via:r.via||''}));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(resumen),'Resumen');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(habilitados),'Habilitados');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(docs),'Detalle_documentos');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(errors),'Errores_API');
   XLSX.writeFile(wb,'panel_firma_'+new Date().toISOString().slice(0,10)+'.xlsx');
-  toast('Excel generado');
 }
-function copyText(text){navigator.clipboard?.writeText(String(text)).then(()=>toast('Copiado')).catch(()=>toast('No se pudo copiar'))}
-function tick(){countdown--; if(countdown<=0){countdown=REFRESH_SECONDS; update()} const m=String(Math.floor(countdown/60)); const s=String(countdown%60).padStart(2,'0'); $('autoBox').textContent='Auto: '+m+':'+s}
-$('configBtn').onclick=openConfig; $('closeBtn').onclick=closeConfig; $('refreshBtn').onclick=update; $('exportBtn').onclick=exportExcel; $('saveBtn').onclick=()=>{const ids=parseIds($('idsBox').value); if(!ids.length){toast('No hay IDs válidos');return} saveIds(ids); closeConfig(); update()}; $('clearBtn').onclick=()=>{localStorage.removeItem(LS_IDS);$('idsBox').value=DEFAULT_IDS.join('\n');toast('Se restauró la lista base');update()}; ['q','show','sort'].forEach(id=>$(id).addEventListener('input',render)); $('clearFiltersBtn').onclick=()=>{$('q').value='';$('show').value='habilitados';$('sort').value='count';render()}; document.addEventListener('click',e=>{const card=e.target.closest('[data-toggle-card]'); if(card)card.closest('.person-card').classList.toggle('open'); const btn=e.target.closest('[data-copy]'); if(btn)copyText(btn.getAttribute('data-copy'))});
-render(); timer=setInterval(tick,1000); if(!loadIds().length)openConfig(); else update();
+
+initTheme();
+runQuery(false);
 </script>
 </body>
 </html>
